@@ -1,0 +1,41 @@
+id,descripcion,categoria,impacto,urgencia,solucion
+INC-001,"No puedo conectarme a la VPN desde casa, me da error de certificado",Red,Usuario,Alta,Reinstalar el certificado de la VPN desde el portal de autoservicio y reiniciar el cliente VPN.
+INC-002,El Wi-Fi de la planta 3 se cae cada pocos minutos,Red,Departamento,Media,Reiniciar el punto de acceso de la planta 3 y actualizar su firmware.
+INC-003,No hay internet en toda la oficina de Vigo,Red,Departamento,Alta,"Reiniciar el router principal de la sede; si persiste, abrir incidencia con el proveedor de fibra."
+INC-004,Las páginas internas no cargan pero Google sí funciona,Red,Usuario,Media,Vaciar la caché DNS con ipconfig /flushdns y comprobar que el DNS es el corporativo.
+INC-005,La VPN se desconecta cada 10 minutos,Red,Usuario,Media,Cambiar el protocolo de la VPN a TCP en la configuración del cliente.
+INC-006,El puerto de red de mi puesto no da conexión,Red,Usuario,Media,"Probar otro cable; si sigue sin funcionar, revisar la toma en el armario de comunicaciones."
+INC-007,Las videollamadas se cortan y van con mucho retraso,Red,Usuario,Baja,Conectar el equipo por cable en lugar de Wi-Fi y cerrar aplicaciones que consumen ancho de banda.
+INC-008,No llego a la carpeta compartida del servidor de ficheros,Red,Usuario,Media,Volver a mapear la unidad de red con la ruta correcta y comprobar la conexión VPN.
+INC-009,El Wi-Fi de invitados no funciona en la sala de reuniones,Red,Departamento,Baja,Regenerar la contraseña semanal del Wi-Fi de invitados y comunicarla a recepción.
+INC-010,Internet va extremadamente lento en todo el departamento de ventas,Red,Departamento,Media,Revisar el consumo del switch de la planta y limitar las descargas masivas.
+INC-011,"Outlook no se abre, se queda cargando el perfil",Software,Usuario,Alta,Iniciar Outlook en modo seguro y reparar el perfil desde el Panel de control.
+INC-012,Excel se cierra solo al abrir un fichero grande,Software,Usuario,Media,Desactivar los complementos de Excel y actualizar Office a la última versión.
+INC-013,No me llegan correos desde esta mañana,Software,Usuario,Alta,Comprobar que el buzón no está lleno y vaciar la carpeta de elementos eliminados.
+INC-014,Teams no muestra los mensajes nuevos,Software,Usuario,Media,"Cerrar sesión en Teams, borrar la caché de la aplicación y volver a iniciar sesión."
+INC-015,El ERP da error al generar facturas para todo el equipo de contabilidad,Software,Departamento,Alta,Reiniciar el servicio de facturación del ERP y revisar el log de errores.
+INC-016,Windows se queda actualizando y no arranca,Software,Usuario,Alta,Arrancar en modo recuperación y desinstalar la última actualización.
+INC-017,No puedo instalar el programa de diseño que necesito,Software,Usuario,Baja,Solicitar la instalación a través del catálogo de software corporativo.
+INC-018,"El navegador no abre la intranet, dice certificado no válido",Software,Usuario,Media,Actualizar el navegador y comprobar que la fecha y hora del equipo son correctas.
+INC-019,El antivirus marca como amenaza una aplicación interna,Software,Departamento,Media,Añadir la aplicación a la lista de exclusiones del antivirus corporativo.
+INC-020,Word va muy lento al escribir,Software,Usuario,Baja,Desactivar la corrección automática en tiempo real y reparar Office.
+INC-021,La impresora de la planta 2 no imprime y muestra error de papel,Hardware,Departamento,Media,"Revisar la bandeja, retirar el papel atascado y reiniciar la impresora."
+INC-022,Mi portátil no enciende,Hardware,Usuario,Alta,"Probar con otro cargador; si no enciende, entregar el equipo a soporte para reparación."
+INC-023,La pantalla externa no da imagen,Hardware,Usuario,Media,"Comprobar el cable HDMI, probar otro puerto y actualizar el controlador gráfico."
+INC-024,El teclado no escribe algunas teclas,Hardware,Usuario,Baja,Limpiar el teclado o sustituirlo por uno de repuesto del almacén.
+INC-025,El ratón inalámbrico deja de funcionar a ratos,Hardware,Usuario,Baja,Cambiar las pilas y conectar el receptor USB en otro puerto.
+INC-026,El portátil se calienta mucho y se apaga solo,Hardware,Usuario,Alta,"Limpiar los ventiladores y revisar procesos que consumen CPU; si persiste, enviarlo a reparación."
+INC-027,El proyector de la sala grande no detecta el portátil,Hardware,Departamento,Media,Seleccionar la entrada correcta en el proyector y usar el adaptador USB-C a HDMI.
+INC-028,Los auriculares no se oyen en las llamadas,Hardware,Usuario,Baja,Seleccionar los auriculares como dispositivo de audio en la configuración de sonido.
+INC-029,La batería del portátil dura menos de una hora,Hardware,Usuario,Baja,Revisar el estado de la batería y solicitar su sustitución si está degradada.
+INC-030,El escáner del departamento no envía los documentos al correo,Hardware,Departamento,Media,Reconfigurar el servidor de correo saliente en el escáner.
+INC-031,He olvidado mi contraseña y no puedo entrar al ordenador,Accesos,Usuario,Alta,Restablecer la contraseña desde el portal de autoservicio o llamar a soporte para un reseteo.
+INC-032,Mi cuenta está bloqueada tras varios intentos fallidos,Accesos,Usuario,Alta,Desbloquear la cuenta en el directorio activo y recordar el uso del gestor de contraseñas.
+INC-033,Necesito permiso para acceder a la carpeta de Recursos Humanos,Accesos,Usuario,Baja,Solicitar la aprobación del responsable y añadir al usuario al grupo de seguridad de la carpeta.
+INC-034,Un empleado nuevo empieza mañana y no tiene cuenta,Accesos,Usuario,Alta,"Dar de alta la cuenta, asignar licencias y enviar las credenciales al responsable."
+INC-035,No me llega el código del doble factor al móvil,Accesos,Usuario,Alta,Reconfigurar el método de autenticación en el portal de seguridad.
+INC-036,Un trabajador que ya no está en la empresa sigue teniendo acceso,Accesos,Departamento,Alta,Deshabilitar la cuenta inmediatamente y revocar sus sesiones activas.
+INC-037,"No puedo acceder al ERP, dice que no tengo permisos",Accesos,Usuario,Media,Asignar al usuario el rol correspondiente en el ERP tras validación del responsable.
+INC-038,La contraseña me caduca hoy y no sé cómo cambiarla,Accesos,Usuario,Baja,Cambiar la contraseña con Ctrl+Alt+Supr > Cambiar contraseña siguiendo la política de seguridad.
+INC-039,Todo el equipo de marketing ha perdido acceso a la herramienta de campañas,Accesos,Departamento,Alta,Revisar la sincronización del grupo de marketing con la herramienta y renovar las licencias.
+INC-040,Necesito acceso de administrador para instalar un controlador,Accesos,Usuario,Baja,Soporte instala el controlador de forma remota; no se conceden permisos de administrador permanentes.
