@@ -13,64 +13,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
-from zoneinfo import ZoneInfo
-
+import os
+from dotenv import load_dotenv
 from google.adk.agents import Agent
 from google.adk.apps import App
-from google.adk.models import Gemini
-from google.genai import types
+from google.adk.models.lite_llm import LiteLlm
 
-import os
-import google.auth
+# Carga variables desde el entorno local si no están ya en os.environ
+load_dotenv()
 
-_, project_id = google.auth.default()
-os.environ["GOOGLE_CLOUD_PROJECT"] = project_id
-os.environ["GOOGLE_CLOUD_LOCATION"] = "global"
-os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "True"
+openai_api_key = os.getenv("OPENAI_API_KEY")
+if not openai_api_key:
+    raise ValueError(
+        "Falta la variable de entorno OPENAI_API_KEY. "
+        "Por favor, configúrala en el entorno o en el archivo .env para poder utilizar el agente."
+    )
 
+modelo_sencillo = os.getenv("MODELO_SENCILLO")
+if not modelo_sencillo:
+    raise ValueError(
+        "Falta la variable de entorno MODELO_SENCILLO. "
+        "Por favor, configúrala en el entorno o en el archivo .env indicando el modelo a utilizar."
+    )
 
-def get_weather(query: str) -> str:
-    """Simulates a web search. Use it get information on weather.
+# Asegurar formato de LiteLLM para proveedores (ej. 'openai/<modelo>')
+model_identifier = (
+    modelo_sencillo
+    if "/" in modelo_sencillo
+    else f"openai/{modelo_sencillo}"
+)
 
-    Args:
-        query: A string containing the location to get weather information for.
+INSTRUCTION = """Eres un asistente especializado en el triaje y clasificación inicial de incidencias técnicas en el departamento de TI.
 
-    Returns:
-        A string with the simulated weather information for the queried location.
-    """
-    if "sf" in query.lower() or "san francisco" in query.lower():
-        return "It's 60 degrees and foggy."
-    return "It's 90 degrees and sunny."
+Tu única tarea es analizar la descripción de la incidencia técnica proporcionada y clasificarla de forma precisa exactamente en una de las siguientes cuatro categorías:
+1. Red: incidencias relacionadas con conectividad, red local, Wi-Fi, VPN, switches, routers, DNS o acceso a internet.
+2. Software: incidencias de aplicaciones, correo electrónico, ofimática, programas informáticos, fallos del sistema operativo o errores de software.
+3. Hardware: fallos físicos en ordenadores, portátiles, monitores, teclados, ratones, impresoras, cables o cualquier componente físico averiado.
+4. Accesos: gestión de permisos, desbloqueo de usuarios, restablecimiento o expiración de contraseñas, roles de acceso y altas o bajas de cuentas.
 
-
-def get_current_time(query: str) -> str:
-    """Simulates getting the current time for a city.
-
-    Args:
-        city: The name of the city to get the current time for.
-
-    Returns:
-        A string with the current time information.
-    """
-    if "sf" in query.lower() or "san francisco" in query.lower():
-        tz_identifier = "America/Los_Angeles"
-    else:
-        return f"Sorry, I don't have timezone information for query: {query}."
-
-    tz = ZoneInfo(tz_identifier)
-    now = datetime.datetime.now(tz)
-    return f"The current time for query {query} is {now.strftime('%Y-%m-%d %H:%M:%S %Z%z')}"
-
+Reglas:
+- Identifica claramente la categoría asignada (Red, Software, Hardware o Accesos).
+- Aporta una justificación breve y concisa de la clasificación asignada.
+- Si la información es insuficiente o ambigua, solicita al usuario los detalles necesarios para poder clasificar la incidencia."""
 
 root_agent = Agent(
     name="root_agent",
-    model=Gemini(
-        model="gemini-3-flash-preview",
-        retry_options=types.HttpRetryOptions(attempts=3),
-    ),
-    instruction="You are a helpful AI assistant designed to provide accurate and useful information.",
-    tools=[get_weather, get_current_time],
+    model=LiteLlm(model=model_identifier),
+    instruction=INSTRUCTION,
 )
 
 app = App(
