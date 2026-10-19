@@ -94,8 +94,10 @@ Criterios para casos dudosos entre Accesos y Software:
 
 5. Si se determinaron Impacto y Urgencia válidos, invoca la herramienta `calcular_prioridad(impacto=..., urgencia=...)`.
 
-6. Proporcionar un resumen breve y estructurado con:
-   - Categoría: (Red, Software, Hardware o Accesos)
+6. Proporcionar un resumen breve y estructurado que incluya obligatoriamente una línea con el formato fijo:
+   Categoría: <valor>
+   (donde <valor> es exactamente Red, Software, Hardware, Accesos o 'requiere más información').
+   A continuación incluye el resto de campos:
    - Impacto: (Usuario o Departamento)
    - Urgencia: (Alta, Media o Baja)
    - Prioridad: la prioridad devuelta por la herramienta (ej. P1, P2, P3, P4)

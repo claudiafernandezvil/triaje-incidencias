@@ -1,0 +1,200 @@
+{
+  "descripcion": "Casos de evaluación del clasificador. 'ajuste' = usados para ajustar las instrucciones; 'nuevo' = no vistos durante el ajuste.",
+  "casos": [
+    {
+      "id": "EV-01",
+      "incidencia": "Desde esta mañana no puedo conectarme a la VPN, me da error de certificado, y tengo una reunión con un cliente a las 12",
+      "conjunto": "ajuste",
+      "esperado": {
+        "categoria": "Red",
+        "impacto": "Usuario",
+        "urgencia": "Alta",
+        "prioridad": "P2"
+      }
+    },
+    {
+      "id": "EV-02",
+      "incidencia": "La impresora de la segunda planta se atasca con cada hoja y nadie del departamento puede imprimir los contratos",
+      "conjunto": "ajuste",
+      "esperado": {
+        "categoria": "Hardware",
+        "impacto": "Departamento",
+        "urgencia": "Alta",
+        "prioridad": "P1"
+      }
+    },
+    {
+      "id": "EV-03",
+      "incidencia": "Me salta un aviso de que mi contraseña caduca en 3 días, ¿cómo la cambio?",
+      "conjunto": "ajuste",
+      "esperado": {
+        "categoria": "Accesos",
+        "impacto": "Usuario",
+        "urgencia": "Baja",
+        "prioridad": "P4"
+      }
+    },
+    {
+      "id": "EV-04",
+      "incidencia": "Outlook se queda en 'cargando perfil' y no puedo leer el correo, necesito contestar a un cliente urgente",
+      "conjunto": "ajuste",
+      "esperado": {
+        "categoria": "Software",
+        "impacto": "Usuario",
+        "urgencia": "Alta",
+        "prioridad": "P2"
+      }
+    },
+    {
+      "id": "EV-05",
+      "incidencia": "Mi ratón inalámbrico se desconecta cada rato, aunque puedo seguir trabajando con el del portátil",
+      "conjunto": "ajuste",
+      "esperado": {
+        "categoria": "Hardware",
+        "impacto": "Usuario",
+        "urgencia": "Baja",
+        "prioridad": "P4"
+      }
+    },
+    {
+      "id": "EV-06",
+      "incidencia": "No hay internet en ninguna planta de la oficina de Vigo y tenemos los pedidos parados",
+      "conjunto": "ajuste",
+      "esperado": {
+        "categoria": "Red",
+        "impacto": "Departamento",
+        "urgencia": "Alta",
+        "prioridad": "P1"
+      }
+    },
+    {
+      "id": "EV-07",
+      "incidencia": "Todo el departamento de marketing ha perdido el acceso a la herramienta de campañas y hoy lanzamos una promoción",
+      "conjunto": "ajuste",
+      "esperado": {
+        "categoria": "Accesos",
+        "impacto": "Departamento",
+        "urgencia": "Alta",
+        "prioridad": "P1"
+      }
+    },
+    {
+      "id": "EV-08",
+      "incidencia": "El ERP no deja emitir facturas a nadie de contabilidad y hoy es cierre de mes",
+      "conjunto": "ajuste",
+      "esperado": {
+        "categoria": "Software",
+        "impacto": "Departamento",
+        "urgencia": "Alta",
+        "prioridad": "P1"
+      }
+    },
+    {
+      "id": "EV-09",
+      "incidencia": "No puedo entrar en el ERP, me dice que no tengo permisos para el módulo de compras",
+      "conjunto": "ajuste",
+      "esperado": {
+        "categoria": "Accesos",
+        "impacto": "Usuario",
+        "urgencia": "Media",
+        "prioridad": "P3"
+      }
+    },
+    {
+      "id": "EV-10",
+      "incidencia": "Teams se cierra solo cada vez que intento compartir pantalla",
+      "conjunto": "ajuste",
+      "esperado": {
+        "categoria": "Software",
+        "impacto": "Usuario",
+        "urgencia": "Media",
+        "prioridad": "P3"
+      }
+    },
+    {
+      "id": "EV-11",
+      "incidencia": "La pantalla del portátil parpadea y a veces se queda negra",
+      "conjunto": "ajuste",
+      "esperado": {
+        "categoria": "Hardware",
+        "impacto": "Usuario",
+        "urgencia": "Media",
+        "prioridad": "P3"
+      }
+    },
+    {
+      "id": "EV-12",
+      "incidencia": "Las páginas de la intranet no cargan, pero Google sí funciona",
+      "conjunto": "ajuste",
+      "esperado": {
+        "categoria": "Red",
+        "impacto": "Usuario",
+        "urgencia": "Media",
+        "prioridad": "P3"
+      }
+    },
+    {
+      "id": "EV-13",
+      "incidencia": "No funciona",
+      "conjunto": "ajuste",
+      "esperado": {
+        "requiere_mas_informacion": true
+      }
+    },
+    {
+      "id": "EV-14",
+      "incidencia": "El wifi de la sala de formación no deja conectarse a ninguno de los asistentes del curso que empieza ahora",
+      "conjunto": "nuevo",
+      "esperado": {
+        "categoria": "Red",
+        "impacto": "Departamento",
+        "urgencia": "Alta",
+        "prioridad": "P1"
+      }
+    },
+    {
+      "id": "EV-15",
+      "incidencia": "¿Me podéis instalar el lector de PDF que usa el resto del equipo? No corre prisa",
+      "conjunto": "nuevo",
+      "esperado": {
+        "categoria": "Software",
+        "impacto": "Usuario",
+        "urgencia": "Baja",
+        "prioridad": "P4"
+      }
+    },
+    {
+      "id": "EV-16",
+      "incidencia": "El ventilador del portátil hace un ruido raro, pero el equipo funciona bien",
+      "conjunto": "nuevo",
+      "esperado": {
+        "categoria": "Hardware",
+        "impacto": "Usuario",
+        "urgencia": "Baja",
+        "prioridad": "P4"
+      }
+    },
+    {
+      "id": "EV-17",
+      "incidencia": "A una compañera nueva le falta acceso a la carpeta compartida de su equipo y lo necesita para empezar esta semana",
+      "conjunto": "nuevo",
+      "esperado": {
+        "categoria": "Accesos",
+        "impacto": "Usuario",
+        "urgencia": "Media",
+        "prioridad": "P3"
+      }
+    },
+    {
+      "id": "EV-18",
+      "incidencia": "Desde ayer las videollamadas de todo el equipo comercial se cortan cada pocos minutos",
+      "conjunto": "nuevo",
+      "esperado": {
+        "categoria": "Red",
+        "impacto": "Departamento",
+        "urgencia": "Media",
+        "prioridad": "P2"
+      }
+    }
+  ]
+}
