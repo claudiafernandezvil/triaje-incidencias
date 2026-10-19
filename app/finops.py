@@ -192,11 +192,27 @@ def after_model_callback(
     llm_response: LlmResponse,
 ) -> LlmResponse | None:
     """Lee el consumo de tokens, calcula el coste, registra en CSV y acumula en sesión."""
-    prompt_tokens = 0
-    candidates_tokens = 0
-    if llm_response and llm_response.usage_metadata:
-        prompt_tokens = llm_response.usage_metadata.prompt_token_count or 0
-        candidates_tokens = llm_response.usage_metadata.candidates_token_count or 0
+    if not llm_response:
+        return llm_response
+
+    # Ignorar respuestas parciales de streaming
+    if getattr(llm_response, "partial", False):
+        return llm_response
+
+    # Ignorar respuestas sin metadatos de uso
+    usage_metadata = getattr(llm_response, "usage_metadata", None)
+    if not usage_metadata:
+        return llm_response
+
+    prompt_tokens = getattr(usage_metadata, "prompt_token_count", 0) or 0
+    candidates_tokens = getattr(usage_metadata, "candidates_token_count", 0) or 0
+    total_tokens = getattr(usage_metadata, "total_token_count", None)
+    if total_tokens is None:
+        total_tokens = prompt_tokens + candidates_tokens
+
+    # Ignorar respuestas con 0 tokens
+    if total_tokens == 0:
+        return llm_response
 
     # Obtener nombre del modelo
     modelo = getattr(llm_response, "model_version", None)

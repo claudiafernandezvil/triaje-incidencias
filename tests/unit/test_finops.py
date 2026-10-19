@@ -156,6 +156,78 @@ def test_after_model_callback_actualiza_estado_y_csv(tmp_path, monkeypatch):
         assert total_acumulado == pytest.approx(0.00165)
 
 
+def test_after_model_callback_ignora_streaming_parcial(tmp_path, monkeypatch):
+    """Verifica que se ignora la respuesta cuando partial == True."""
+    csv_file = tmp_path / "costes.csv"
+    monkeypatch.setenv("RUTA_LOGS_COSTES", str(csv_file))
+
+    ctx = MagicMock()
+    ctx.session.id = "ses-partial"
+    ctx.agent_name = "clasificador"
+    ctx.state = {}
+
+    response = LlmResponse(
+        model_version="gpt-5.4-nano",
+        partial=True,
+        usage_metadata=types.GenerateContentResponseUsageMetadata(
+            prompt_token_count=100,
+            candidates_token_count=50,
+            total_token_count=150,
+        ),
+    )
+
+    ret_val = after_model_callback(ctx, response)
+    assert ret_val is response
+    assert ctx.state == {}
+    assert not csv_file.exists()
+
+
+def test_after_model_callback_ignora_sin_usage_metadata(tmp_path, monkeypatch):
+    """Verifica que se ignora la respuesta cuando no trae usage_metadata."""
+    csv_file = tmp_path / "costes.csv"
+    monkeypatch.setenv("RUTA_LOGS_COSTES", str(csv_file))
+
+    ctx = MagicMock()
+    ctx.session.id = "ses-no-usage"
+    ctx.agent_name = "clasificador"
+    ctx.state = {}
+
+    response = LlmResponse(
+        model_version="gpt-5.4-nano",
+        usage_metadata=None,
+    )
+
+    ret_val = after_model_callback(ctx, response)
+    assert ret_val is response
+    assert ctx.state == {}
+    assert not csv_file.exists()
+
+
+def test_after_model_callback_ignora_cero_tokens(tmp_path, monkeypatch):
+    """Verifica que se ignora la respuesta cuando tiene 0 tokens."""
+    csv_file = tmp_path / "costes.csv"
+    monkeypatch.setenv("RUTA_LOGS_COSTES", str(csv_file))
+
+    ctx = MagicMock()
+    ctx.session.id = "ses-cero-tokens"
+    ctx.agent_name = "clasificador"
+    ctx.state = {}
+
+    response = LlmResponse(
+        model_version="gpt-5.4-nano",
+        usage_metadata=types.GenerateContentResponseUsageMetadata(
+            prompt_token_count=0,
+            candidates_token_count=0,
+            total_token_count=0,
+        ),
+    )
+
+    ret_val = after_model_callback(ctx, response)
+    assert ret_val is response
+    assert ctx.state == {}
+    assert not csv_file.exists()
+
+
 # -----------------------------------------------------------------------------
 # 3. Tests para corte por presupuesto (before_model_callback)
 # -----------------------------------------------------------------------------
