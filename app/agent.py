@@ -18,7 +18,9 @@ from dotenv import load_dotenv
 from google.adk.agents import LlmAgent, SequentialAgent
 from google.adk.apps import App
 from google.adk.models.lite_llm import LiteLlm
+from google.genai import types as genai_types
 
+from app.finops import after_model_callback, before_model_callback
 from app.tools import buscar_incidencias_similares, calcular_prioridad
 
 # Carga variables desde el entorno local si no están ya en os.environ
@@ -60,7 +62,18 @@ model_redaccion_llm = LiteLlm(model=_formatear_modelo(modelo_redaccion))
 INSTRUCCION_CLASIFICADOR = """Eres un asistente especializado en la clasificación y priorización técnica de incidencias de TI.
 
 Tu tarea es:
-1. Analizar la incidencia reportada por el usuario y clasificarla exactamente en una de las siguientes cuatro categorías:
+1. Analizar la incidencia reportada por el usuario y evaluar si cuenta con información suficiente para clasificarla técnicamente:
+   - Si la incidencia es demasiado vaga para clasificarla (por ejemplo, no dice qué falla o es un mensaje genérico sin detalles del problema):
+     * Debes indicar exactamente 'requiere más información' como Categoría en lugar de elegir una categoría por defecto.
+     * NO llames a la herramienta `calcular_prioridad`.
+     * Genera directamente el resumen estructurado indicando:
+       - Categoría: requiere más información
+       - Impacto: No determinado
+       - Urgencia: No determinada
+       - Prioridad: No asignada
+       - Justificación: Explica brevemente que la descripción es insuficiente para identificar el problema y que se requieren datos específicos para clasificarla.
+
+2. Si la incidencia tiene información suficiente, clasifícala exactamente en una de las siguientes cuatro categorías:
    - Red: incidencias de conectividad, red local, Wi-Fi, VPN, switches, routers, DNS o acceso a internet.
    - Software: errores de aplicaciones, correo electrónico, ofimática, programas informáticos o fallos del sistema operativo (la aplicación falla, da errores, se cierra o funciona mal, pero el usuario sí tiene acceso).
    - Hardware: problemas en ordenadores, pantallas, periféricos, teclados, ratones, impresoras o cables averiados.
@@ -70,18 +83,18 @@ Criterios para casos dudosos entre Accesos y Software:
 - Si el texto indica "sin acceso", "perdido el acceso" o "no tengo permisos", prioriza siempre Accesos, salvo que se describa claramente un error interno o mal funcionamiento de la aplicación.
 - No clasifiques como Software una incidencia solo porque mencione una aplicación; si el impedimento es de entrada, credencial o asignación, es Accesos.
 
-Ejemplos de referencia para casos dudosos:
-- "El equipo de ventas no puede ingresar al portal comercial tras la renovación de licencias" -> Categoría: Accesos (imposibilidad de entrada por gestión de licencias/roles en una app).
-- "El usuario entra al ERP pero la pantalla se congela y lanza un error al guardar una factura" -> Categoría: Software (el usuario puede entrar, pero la app falla internamente).
-- "Varios analistas están bloqueados y no pueden autenticarse por fallo en el doble factor" -> Categoría: Accesos (bloqueo de autenticación/credenciales).
+3. Determinar el impacto:
+   - 'Departamento': si afecta a varias personas, a un equipo o a una sede.
+   - 'Usuario': si afecta a una sola persona.
 
-2. Determinar el impacto:
-   - 'Usuario' si afecta a un único usuario.
-   - 'Departamento' si afecta a un área, equipo o departamento entero.
-3. Determinar la urgencia:
-   - 'Alta', 'Media' o 'Baja' según la criticidad operativa y el bloqueo generado.
-4. Invocar la herramienta `calcular_prioridad(impacto=..., urgencia=...)` con el impacto y la urgencia determinados.
-5. Proporcionar un resumen breve y estructurado con:
+4. Determinar la urgencia evaluando estrictamente en el siguiente orden de comprobación:
+   - Primero, ¿es 'Alta'?: si bloquea totalmente el trabajo ahora mismo (nadie o casi nadie puede hacer su tarea) o el texto menciona un plazo para hoy (reunión, cierre, cliente esperando).
+   - Si no, ¿es 'Baja'?: si es una consulta, un aviso preventivo (algo que todavía funciona o caducará más adelante) o una molestia que no impide trabajar.
+   - Si no es ninguna de las anteriores, es 'Media' (dificulta el trabajo pero hay alternativa o puede esperar unas horas).
+
+5. Si se determinaron Impacto y Urgencia válidos, invoca la herramienta `calcular_prioridad(impacto=..., urgencia=...)`.
+
+6. Proporcionar un resumen breve y estructurado con:
    - Categoría: (Red, Software, Hardware o Accesos)
    - Impacto: (Usuario o Departamento)
    - Urgencia: (Alta, Media o Baja)
@@ -95,6 +108,12 @@ clasificador = LlmAgent(
     instruction=INSTRUCCION_CLASIFICADOR,
     tools=[calcular_prioridad],
     output_key="clasificacion",
+    before_model_callback=before_model_callback,
+    after_model_callback=after_model_callback,
+    generate_content_config=genai_types.GenerateContentConfig(
+        temperature=0.0,
+        max_output_tokens=500,
+    ),
 )
 
 # -----------------------------------------------------------------------------
@@ -106,9 +125,14 @@ Dispones del resultado de la clasificación previa en:
 {clasificacion}
 
 Tu tarea es:
-1. Extraer la categoría identificada y la descripción técnica del problema reportado a partir de {clasificacion} y del mensaje del usuario.
-2. Invocar la herramienta `buscar_incidencias_similares(descripcion=..., categoria=...)` pasando la descripción del problema y la categoría correspondiente.
-3. Devolver las incidencias similares encontradas junto con sus soluciones registradas. Si no se encuentran casos coincidentes, indícalo de forma clara.
+1. Analizar la clasificación previa en {clasificacion}:
+   - Si la clasificación indica 'requiere más información' o no tiene una categoría técnica válida (Red, Software, Hardware o Accesos):
+     * NO debes buscar incidencias similares. NO invoques la herramienta `buscar_incidencias_similares`.
+     * Responde indicando de forma clara que no se realiza la búsqueda en el histórico porque la incidencia requiere más información y no dispone de una categoría técnica asignada.
+   - Si la clasificación contiene una categoría técnica válida:
+     * Extrae la categoría identificada y la descripción técnica del problema reportado a partir de {clasificacion} y del mensaje del usuario.
+     * Invoca la herramienta `buscar_incidencias_similares(descripcion=..., categoria=...)` pasando la descripción del problema y la categoría correspondiente.
+     * Devuelve las incidencias similares encontradas junto con sus soluciones registradas. Si no se encuentran casos coincidentes, indícalo de forma clara.
 """
 
 buscador = LlmAgent(
@@ -117,6 +141,11 @@ buscador = LlmAgent(
     instruction=INSTRUCCION_BUSCADOR,
     tools=[buscar_incidencias_similares],
     output_key="similares",
+    before_model_callback=before_model_callback,
+    after_model_callback=after_model_callback,
+    generate_content_config=genai_types.GenerateContentConfig(
+        max_output_tokens=500,
+    ),
 )
 
 # -----------------------------------------------------------------------------
@@ -131,8 +160,22 @@ Dispones de la siguiente información del caso:
 - Incidencias similares y soluciones:
 {similares}
 
-Tu tarea es redactar la comunicación final estructurada obligatoriamente en dos apartados:
+Tu tarea es redactar la comunicación final estructurada obligatoriamente en dos apartados según el estado del caso:
 
+Caso A: Si la clasificación en {clasificacion} indica 'requiere más información':
+### 1. Respuesta para el usuario
+- Tono amable, empático, claro y profesional.
+- Explica que con la información facilitada no es posible determinar el problema y solicita al usuario de manera clara los datos concretos que faltan:
+  1. Qué aplicación o equipo específico presenta el problema.
+  2. Qué error ve exactamente (mensaje, código o síntoma observado).
+  3. Desde cuándo ocurre la incidencia.
+  4. A cuántas personas afecta.
+
+### 2. Nota técnica para el equipo de soporte
+- Resumen técnico conciso.
+- Detalla que la incidencia queda pendiente de datos por parte del usuario, indicando que la categoría requiere más información y que la prioridad está pendiente de asignación.
+
+Caso B: Si la incidencia fue clasificada con una categoría técnica y prioridad:
 ### 1. Respuesta para el usuario
 - Tono amable, empático, claro y profesional.
 - Explica los pasos a seguir para solventar la incidencia (aprovechando las soluciones de casos similares si aplican) o los siguientes pasos que seguirá el equipo de TI para atender su solicitud.
@@ -147,6 +190,11 @@ redactor = LlmAgent(
     model=model_redaccion_llm,
     instruction=INSTRUCCION_REDACTOR,
     tools=[],
+    before_model_callback=before_model_callback,
+    after_model_callback=after_model_callback,
+    generate_content_config=genai_types.GenerateContentConfig(
+        max_output_tokens=1500,
+    ),
 )
 
 # -----------------------------------------------------------------------------
