@@ -1,5 +1,5 @@
 {
-  "descripcion": "Casos de evaluación del clasificador. 'ajuste' = usados para ajustar las instrucciones; 'nuevo' = no vistos durante el ajuste.",
+  "descripcion": "Casos de evaluación del clasificador. 'ajuste' = usados para ajustar las instrucciones; 'nuevo' = no vistos en el primer ajuste (sus fallos se usaron en el segundo); 'validacion' = nunca usados para ajustar, ejecutar solo al final.",
   "casos": [
     {
       "id": "EV-01",
@@ -194,6 +194,113 @@
         "impacto": "Departamento",
         "urgencia": "Media",
         "prioridad": "P2"
+      }
+    },
+    {
+      "id": "EV-19",
+      "incidencia": "El lector de tarjetas de la entrada no funciona y nadie del turno de mañana puede fichar ni entrar al almacén",
+      "conjunto": "validacion",
+      "esperado": {
+        "categoria": "Hardware",
+        "impacto": "Departamento",
+        "urgencia": "Alta",
+        "prioridad": "P1"
+      }
+    },
+    {
+      "id": "EV-20",
+      "incidencia": "Excel me da un error al abrir las macros del informe que tengo que entregar hoy a dirección",
+      "conjunto": "validacion",
+      "esperado": {
+        "categoria": "Software",
+        "impacto": "Usuario",
+        "urgencia": "Alta",
+        "prioridad": "P2"
+      }
+    },
+    {
+      "id": "EV-21",
+      "incidencia": "Quería saber si puedo conectar mi móvil personal al Wi-Fi de invitados",
+      "conjunto": "validacion",
+      "esperado": {
+        "categoria": "Red",
+        "impacto": "Usuario",
+        "urgencia": "Baja",
+        "prioridad": "P4"
+      }
+    },
+    {
+      "id": "EV-22",
+      "incidencia": "Me han cambiado de departamento y no veo las carpetas de mi nuevo equipo",
+      "conjunto": "validacion",
+      "esperado": {
+        "categoria": "Accesos",
+        "impacto": "Usuario",
+        "urgencia": "Media",
+        "prioridad": "P3"
+      }
+    },
+    {
+      "id": "EV-23",
+      "incidencia": "Una tecla del teclado del portátil se queda pegada; mientras tanto uso un teclado externo",
+      "conjunto": "validacion",
+      "esperado": {
+        "categoria": "Hardware",
+        "impacto": "Usuario",
+        "urgencia": "Baja",
+        "prioridad": "P4"
+      }
+    },
+    {
+      "id": "EV-24",
+      "incidencia": "La aplicación de nóminas se cierra al exportar a PDF a todas las personas de recursos humanos",
+      "conjunto": "validacion",
+      "esperado": {
+        "categoria": "Software",
+        "impacto": "Departamento",
+        "urgencia": "Media",
+        "prioridad": "P2"
+      }
+    },
+    {
+      "id": "EV-25",
+      "incidencia": "La red por cable de toda la tercera planta va algo más lenta de lo normal, aunque se puede trabajar sin problema",
+      "conjunto": "validacion",
+      "esperado": {
+        "categoria": "Red",
+        "impacto": "Departamento",
+        "urgencia": "Baja",
+        "prioridad": "P3"
+      }
+    },
+    {
+      "id": "EV-26",
+      "incidencia": "No puedo iniciar sesión en el portátil porque dice que mi cuenta está deshabilitada, y tengo que trabajar ya",
+      "conjunto": "validacion",
+      "esperado": {
+        "categoria": "Accesos",
+        "impacto": "Usuario",
+        "urgencia": "Alta",
+        "prioridad": "P2"
+      }
+    },
+    {
+      "id": "EV-27",
+      "incidencia": "Ayuda",
+      "conjunto": "validacion",
+      "esperado": {
+        "requiere_mas_informacion": true
+      }
+    },
+    {
+      "id": "EV-28",
+      "incidencia": "El monitor de la sala de reuniones grande no enciende y la reunión con el comité de dirección empieza en media hora",
+      "conjunto": "validacion",
+      "esperado": {
+        "categoria": "Hardware",
+        "impacto": "Departamento",
+        "urgencia": "Alta",
+        "prioridad": "P1"
       }
     }
   ]

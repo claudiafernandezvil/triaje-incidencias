@@ -1,66 +1,76 @@
 # Último Resultado de Evaluación del Clasificador
 
-- **Fecha (UTC):** 2026-10-19 10:53:48
+- **Fecha (UTC):** 2026-10-20 06:55:34
 - **Modelo evaluado:** `openai/gpt-5.4-nano-2026-03-17`
-- **Total de casos evaluados:** 18
+- **Total de casos evaluados:** 28
 
 ## 1. Resumen de Aciertos
 
 | Métrica | Aciertos | Porcentaje |
 | :--- | :---: | :---: |
-| **Casos totalmente correctos (Global)** | 11/18 | 61.1% |
-| Conjunto `ajuste` | 9/13 | 69.2% |
-| Conjunto `nuevo` | 2/5 | 40.0% |
+| **Casos totalmente correctos (Global)** | 22/28 | 78.6% |
+| Conjunto `ajuste` | 12/13 | 92.3% |
+| Conjunto `nuevo` | 3/5 | 60.0% |
+| Conjunto `validacion` | 7/10 | 70.0% |
 
 ### Precisión por Campo (Casos Estándar)
 
 | Campo | Aciertos | Porcentaje |
 | :--- | :---: | :---: |
-| Categoría | 16/17 | 94.1% |
-| Impacto | 12/17 | 70.6% |
-| Urgencia | 11/17 | 64.7% |
-| Prioridad | 10/17 | 58.8% |
+| Categoría | 24/26 | 92.3% |
+| Impacto | 25/26 | 96.2% |
+| Urgencia | 22/26 | 84.6% |
+| Prioridad | 22/26 | 84.6% |
 
 ## 2. Consumo y Costes FinOps
 
 | Concepto | Cantidad |
 | :--- | :---: |
-| Tokens de entrada (prompt) | 36,449 |
-| Tokens de salida (completion) | 1,790 |
-| Tokens totales | 38,239 |
-| Coste total estimado | **$0.009527 USD** |
+| Tokens de entrada (prompt) | 80,924 |
+| Tokens de salida (completion) | 2,837 |
+| Tokens totales | 83,761 |
+| Coste total estimado | **$0.019731 USD** |
 
 ## 3. Tabla de Fallos
 
 | ID | Conjunto | Incidencia | Discrepancias (Esperado vs Obtenido) |
 | :---: | :---: | :--- | :--- |
-| EV-03 | `ajuste` | Me salta un aviso de que mi contraseña caduca en 3... | Impacto: esperado='Usuario', obtenido='None'<br>Urgencia: esperado='Baja', obtenido='None'<br>Prioridad: esperado='P4', obtenido='None' |
-| EV-05 | `ajuste` | Mi ratón inalámbrico se desconecta cada rato, aunq... | Urgencia: esperado='Baja', obtenido='Media'<br>Prioridad: esperado='P4', obtenido='P3' |
-| EV-11 | `ajuste` | La pantalla del portátil parpadea y a veces se que... | Impacto: esperado='Usuario', obtenido='None'<br>Urgencia: esperado='Media', obtenido='None'<br>Prioridad: esperado='P3', obtenido='None' |
-| EV-12 | `ajuste` | Las páginas de la intranet no cargan, pero Google ... | Impacto: esperado='Usuario', obtenido='Departamento'<br>Prioridad: esperado='P3', obtenido='P2' |
-| EV-15 | `nuevo` | ¿Me podéis instalar el lector de PDF que usa el re... | Categoría: esperado='Software', obtenido='Accesos'<br>Impacto: esperado='Usuario', obtenido='None'<br>Urgencia: esperado='Baja', obtenido='None'<br>Prioridad: esperado='P4', obtenido='None' |
-| EV-16 | `nuevo` | El ventilador del portátil hace un ruido raro, per... | Impacto: esperado='Usuario', obtenido='None'<br>Urgencia: esperado='Baja', obtenido='None'<br>Prioridad: esperado='P4', obtenido='None' |
-| EV-17 | `nuevo` | A una compañera nueva le falta acceso a la carpeta... | Urgencia: esperado='Media', obtenido='Alta'<br>Prioridad: esperado='P3', obtenido='P2' |
+| EV-03 | `ajuste` | Me salta un aviso de que mi contraseña caduca en 3... | Categoría: esperado='Accesos', obtenido='Software' |
+| EV-16 | `nuevo` | El ventilador del portátil hace un ruido raro, per... | Urgencia: esperado='Baja', obtenido='Media'<br>Prioridad: esperado='P4', obtenido='P3' |
+| EV-17 | `nuevo` | A una compañera nueva le falta acceso a la carpeta... | Impacto: esperado='Usuario', obtenido='Departamento'<br>Urgencia: esperado='Media', obtenido='Alta'<br>Prioridad: esperado='P3', obtenido='P1' |
+| EV-19 | `validacion` | El lector de tarjetas de la entrada no funciona y ... | Categoría: esperado='Hardware', obtenido='Accesos' |
+| EV-23 | `validacion` | Una tecla del teclado del portátil se queda pegada... | Urgencia: esperado='Baja', obtenido='Media'<br>Prioridad: esperado='P4', obtenido='P3' |
+| EV-25 | `validacion` | La red por cable de toda la tercera planta va algo... | Urgencia: esperado='Baja', obtenido='Media'<br>Prioridad: esperado='P3', obtenido='P2' |
 
 ## 4. Detalle de Ejecución por Caso
 
 | ID | Conjunto | Categoría (Esp / Obt) | Impacto (Esp / Obt) | Urgencia (Esp / Obt) | Prioridad (Esp / Obt) | Estado | Tokens | Coste ($) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| EV-01 | `ajuste` | Red / Red | Usuario / Usuario | Alta / Alta | P2 / P2 | ✅ OK | 2474 | $0.000593 |
-| EV-02 | `ajuste` | Hardware / Hardware | Departamento / Departamento | Alta / Alta | P1 / P1 | ✅ OK | 2450 | $0.000578 |
-| EV-03 | `ajuste` | Accesos / Accesos | Usuario / - | Baja / - | P4 / - | ❌ Fallo | 1242 | $0.000342 |
-| EV-04 | `ajuste` | Software / Software | Usuario / Usuario | Alta / Alta | P2 / P2 | ✅ OK | 2454 | $0.000577 |
-| EV-05 | `ajuste` | Hardware / Hardware | Usuario / Usuario | Baja / Media | P4 / P3 | ❌ Fallo | 2478 | $0.000615 |
-| EV-06 | `ajuste` | Red / Red | Departamento / Departamento | Alta / Alta | P1 / P1 | ✅ OK | 2451 | $0.000588 |
-| EV-07 | `ajuste` | Accesos / Accesos | Departamento / Departamento | Alta / Alta | P1 / P1 | ✅ OK | 2455 | $0.000587 |
-| EV-08 | `ajuste` | Software / Software | Departamento / Departamento | Alta / Alta | P1 / P1 | ✅ OK | 2449 | $0.000583 |
-| EV-09 | `ajuste` | Accesos / Accesos | Usuario / Usuario | Media / Media | P3 / P3 | ✅ OK | 2476 | $0.000617 |
-| EV-10 | `ajuste` | Software / Software | Usuario / Usuario | Media / Media | P3 / P3 | ✅ OK | 2456 | $0.000607 |
-| EV-11 | `ajuste` | Hardware / Hardware | Usuario / - | Media / - | P3 / - | ❌ Fallo | 1257 | $0.000368 |
-| EV-12 | `ajuste` | Red / Red | Usuario / Departamento | Media / Media | P3 / P2 | ❌ Fallo | 2484 | $0.000635 |
-| EV-13 | `ajuste` | requiere más información / requiere más información | - / - | - / - | - / - | ✅ OK | 1257 | $0.000381 |
-| EV-14 | `nuevo` | Red / Red | Departamento / Departamento | Alta / Alta | P1 / P1 | ✅ OK | 2468 | $0.000601 |
-| EV-15 | `nuevo` | Software / Accesos | Usuario / - | Baja / - | P4 / - | ❌ Fallo | 1233 | $0.000333 |
-| EV-16 | `nuevo` | Hardware / Hardware | Usuario / - | Baja / - | P4 / - | ❌ Fallo | 1230 | $0.000333 |
-| EV-17 | `nuevo` | Accesos / Accesos | Usuario / Usuario | Media / Alta | P3 / P2 | ❌ Fallo | 2465 | $0.000593 |
-| EV-18 | `nuevo` | Red / Red | Departamento / Departamento | Media / Media | P2 / P2 | ✅ OK | 2460 | $0.000597 |
+| EV-01 | `ajuste` | Red / Red | Usuario / Usuario | Alta / Alta | P2 / P2 | ✅ OK | 3119 | $0.000730 |
+| EV-02 | `ajuste` | Hardware / Hardware | Departamento / Departamento | Alta / Alta | P1 / P1 | ✅ OK | 3096 | $0.000716 |
+| EV-03 | `ajuste` | Accesos / Software | Usuario / Usuario | Baja / Baja | P4 / P4 | ❌ Fallo | 3097 | $0.000715 |
+| EV-04 | `ajuste` | Software / Software | Usuario / Usuario | Alta / Alta | P2 / P2 | ✅ OK | 3110 | $0.000727 |
+| EV-05 | `ajuste` | Hardware / Hardware | Usuario / Usuario | Baja / Baja | P4 / P4 | ✅ OK | 3115 | $0.000740 |
+| EV-06 | `ajuste` | Red / Red | Departamento / Departamento | Alta / Alta | P1 / P1 | ✅ OK | 3090 | $0.000717 |
+| EV-07 | `ajuste` | Accesos / Accesos | Departamento / Departamento | Alta / Alta | P1 / P1 | ✅ OK | 3098 | $0.000720 |
+| EV-08 | `ajuste` | Software / Software | Departamento / Departamento | Alta / Alta | P1 / P1 | ✅ OK | 3092 | $0.000717 |
+| EV-09 | `ajuste` | Accesos / Accesos | Usuario / Usuario | Media / Media | P3 / P3 | ✅ OK | 3094 | $0.000720 |
+| EV-10 | `ajuste` | Software / Software | Usuario / Usuario | Media / Media | P3 / P3 | ✅ OK | 3072 | $0.000707 |
+| EV-11 | `ajuste` | Hardware / Hardware | Usuario / Usuario | Media / Media | P3 / P3 | ✅ OK | 3108 | $0.000746 |
+| EV-12 | `ajuste` | Red / Red | Usuario / Usuario | Media / Media | P3 / P3 | ✅ OK | 3106 | $0.000743 |
+| EV-13 | `ajuste` | requiere más información / requiere más información | - / - | - / - | - / - | ✅ OK | 1546 | $0.000407 |
+| EV-14 | `nuevo` | Red / Red | Departamento / Departamento | Alta / Alta | P1 / P1 | ✅ OK | 3108 | $0.000731 |
+| EV-15 | `nuevo` | Software / Software | Usuario / Usuario | Baja / Baja | P4 / P4 | ✅ OK | 3095 | $0.000717 |
+| EV-16 | `nuevo` | Hardware / Hardware | Usuario / Usuario | Baja / Media | P4 / P3 | ❌ Fallo | 3086 | $0.000716 |
+| EV-17 | `nuevo` | Accesos / Accesos | Usuario / Departamento | Media / Alta | P3 / P1 | ❌ Fallo | 3119 | $0.000740 |
+| EV-18 | `nuevo` | Red / Red | Departamento / Departamento | Media / Media | P2 / P2 | ✅ OK | 3127 | $0.000761 |
+| EV-19 | `validacion` | Hardware / Accesos | Departamento / Departamento | Alta / Alta | P1 / P1 | ❌ Fallo | 3117 | $0.000738 |
+| EV-20 | `validacion` | Software / Software | Usuario / Usuario | Alta / Alta | P2 / P2 | ✅ OK | 3095 | $0.000721 |
+| EV-21 | `validacion` | Red / Red | Usuario / Usuario | Baja / Baja | P4 / P4 | ✅ OK | 3093 | $0.000725 |
+| EV-22 | `validacion` | Accesos / Accesos | Usuario / Usuario | Media / Media | P3 / P3 | ✅ OK | 3091 | $0.000722 |
+| EV-23 | `validacion` | Hardware / Hardware | Usuario / Usuario | Baja / Media | P4 / P3 | ❌ Fallo | 3090 | $0.000717 |
+| EV-24 | `validacion` | Software / Software | Departamento / Departamento | Media / Media | P2 / P2 | ✅ OK | 3120 | $0.000746 |
+| EV-25 | `validacion` | Red / Red | Departamento / Departamento | Baja / Media | P3 / P2 | ❌ Fallo | 3118 | $0.000739 |
+| EV-26 | `validacion` | Accesos / Accesos | Usuario / Usuario | Alta / Alta | P2 / P2 | ✅ OK | 3111 | $0.000732 |
+| EV-27 | `validacion` | requiere más información / requiere más información | - / - | - / - | - / - | ✅ OK | 1536 | $0.000394 |
+| EV-28 | `validacion` | Hardware / Hardware | Departamento / Departamento | Alta / Alta | P1 / P1 | ✅ OK | 3112 | $0.000730 |

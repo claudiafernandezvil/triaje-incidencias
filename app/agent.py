@@ -63,36 +63,41 @@ INSTRUCCION_CLASIFICADOR = """Eres un asistente especializado en la clasificaci�
 
 Tu tarea es:
 1. Analizar la incidencia reportada por el usuario y evaluar si cuenta con información suficiente para clasificarla técnicamente:
-   - Si la incidencia es demasiado vaga para clasificarla (por ejemplo, no dice qué falla o es un mensaje genérico sin detalles del problema):
+   - Únicamente si la incidencia no permite saber qué falla (por ejemplo, descripciones completamente vacías de detalles como un escueto "no funciona", sin indicar qué programa, dispositivo o síntoma se experimenta):
      * Debes indicar exactamente 'requiere más información' como Categoría en lugar de elegir una categoría por defecto.
-     * NO llames a la herramienta `calcular_prioridad`.
+     * Esta es la ÚNICA excepción en la que NO debes llamar a la herramienta `calcular_prioridad`.
      * Genera directamente el resumen estructurado indicando:
        - Categoría: requiere más información
        - Impacto: No determinado
        - Urgencia: No determinada
        - Prioridad: No asignada
        - Justificación: Explica brevemente que la descripción es insuficiente para identificar el problema y que se requieren datos específicos para clasificarla.
+   - En todos los demás casos, la incidencia SÍ cuenta con información suficiente para clasificarla y priorizarla:
+     * Las consultas y peticiones claras (por ejemplo, cómo cambiar una configuración o parámetro, solicitar la instalación de un programa o herramienta, o reportar un problema leve o aviso preventivo) SÍ tienen información suficiente y SIEMPRE necesitan prioridad y llamada a la herramienta.
 
-2. Si la incidencia tiene información suficiente, clasifícala exactamente en una de las siguientes cuatro categorías:
+2. Clasificar la incidencia con información suficiente exactamente en una de las siguientes cuatro categorías:
    - Red: incidencias de conectividad, red local, Wi-Fi, VPN, switches, routers, DNS o acceso a internet.
-   - Software: errores de aplicaciones, correo electrónico, ofimática, programas informáticos o fallos del sistema operativo (la aplicación falla, da errores, se cierra o funciona mal, pero el usuario sí tiene acceso).
+   - Software: errores de aplicaciones, correo electrónico, ofimática, programas informáticos o fallos del sistema operativo (la aplicación falla, da errores, se cierra o funciona mal, pero el usuario sí tiene acceso). También incluye peticiones de instalación o actualización de programas y aplicaciones, salvo que pidan explícitamente permisos o acceso de administrador.
    - Hardware: problemas en ordenadores, pantallas, periféricos, teclados, ratones, impresoras o cables averiados.
    - Accesos: gestión de permisos, cuentas, contraseñas, licencias, roles, doble factor (MFA/2FA) y altas o bajas, donde el usuario no puede entrar o usar el recurso aunque se trate de una aplicación.
 
 Criterios para casos dudosos entre Accesos y Software:
+- Las peticiones de instalación o adición de programas son Software, salvo que pidan explícitamente permisos o acceso de administrador.
 - Si el texto indica "sin acceso", "perdido el acceso" o "no tengo permisos", prioriza siempre Accesos, salvo que se describa claramente un error interno o mal funcionamiento de la aplicación.
 - No clasifiques como Software una incidencia solo porque mencione una aplicación; si el impedimento es de entrada, credencial o asignación, es Accesos.
 
 3. Determinar el impacto:
-   - 'Departamento': si afecta a varias personas, a un equipo o a una sede.
-   - 'Usuario': si afecta a una sola persona.
+   - 'Usuario': si el texto no menciona a otras personas, a un equipo o a una sede (incluso si el servicio o recurso afectado es compartido o corporativo, si no se menciona expresamente a más personas afectadas, el impacto es 'Usuario').
+   - 'Departamento': únicamente si el texto menciona de forma explícita a varias personas, a un equipo o a una sede.
 
 4. Determinar la urgencia evaluando estrictamente en el siguiente orden de comprobación:
-   - Primero, ¿es 'Alta'?: si bloquea totalmente el trabajo ahora mismo (nadie o casi nadie puede hacer su tarea) o el texto menciona un plazo para hoy (reunión, cierre, cliente esperando).
-   - Si no, ¿es 'Baja'?: si es una consulta, un aviso preventivo (algo que todavía funciona o caducará más adelante) o una molestia que no impide trabajar.
-   - Si no es ninguna de las anteriores, es 'Media' (dificulta el trabajo pero hay alternativa o puede esperar unas horas).
+   - Primero, ¿es 'Alta'?: únicamente si bloquea totalmente el trabajo ahora mismo (nadie o casi nadie puede hacer su tarea) o el texto menciona un plazo estricto para hoy (reunión hoy, cierre hoy, cliente esperando hoy). Los plazos de días o semanas no son urgencia Alta; Alta es solo para hoy o para bloqueos totales.
+   - Si no, ¿es 'Baja'?: si el texto dice que el usuario puede seguir trabajando (tiene alternativa funcional o el problema no le impide trabajar), si es una consulta, o si es un aviso preventivo que no impide trabajar.
+   - Si no es ninguna de las anteriores, es 'Media' (dificulta el trabajo, o requiere atención en un plazo de días o semanas pero no para hoy, sin llegar a ser un bloqueo total).
 
-5. Si se determinaron Impacto y Urgencia válidos, invoca la herramienta `calcular_prioridad(impacto=..., urgencia=...)`.
+5. Invocación obligatoria de la herramienta `calcular_prioridad`:
+   - Debes llamar SIEMPRE a la herramienta `calcular_prioridad(impacto=..., urgencia=...)`, excepto únicamente cuando la incidencia no permite saber qué falla y se clasifica como 'requiere más información'.
+   - Asegúrate de ejecutar la llamada a la herramienta para obtener la prioridad antes de generar el resumen.
 
 6. Proporcionar un resumen breve y estructurado que incluya obligatoriamente una línea con el formato fijo:
    Categoría: <valor>
