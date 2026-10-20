@@ -188,7 +188,9 @@ Un `after_model_callback` de ADK registra cada llamada al modelo en `logs/costes
 uv run python scripts/informe_costes.py
 ```
  
-El informe muestra el gasto acumulado frente al presupuesto, el coste medio por incidencia, el desglose por agente y una proyección a 1.000 incidencias al mes.
+El informe muestra el gasto acumulado frente al presupuesto, el coste medio por incidencia, cuánto aporta cada agente al coste de una incidencia, el desglose global por agente y una proyección a 1.000 incidencias al mes.
+ 
+Para el coste por incidencia solo cuenta las **incidencias completas** (sesiones que llegan al redactor). Las evaluaciones, las consultas sobre el historial y los saludos se muestran aparte: cuentan en el gasto total y en el presupuesto, pero no distorsionan el coste por incidencia.
  
 ### Límites
  
@@ -207,7 +209,7 @@ El informe muestra el gasto acumulado frente al presupuesto, el coste medio por 
  
 ### Resultados
  
-Coste de una **incidencia completa** (coordinador + cadena de triaje), calculado con el coste medio por llamada de cada agente:
+Coste de una **incidencia completa** (coordinador + cadena de triaje), por agente:
  
 | Agente | Llamadas por incidencia | Coste aprox. (USD) |
 |---|---|---|
@@ -225,8 +227,6 @@ Coste de una **incidencia completa** (coordinador + cadena de triaje), calculado
 | Sobrecoste del coordinador | ≈ 4 % por incidencia |
 | Coste de una evaluación completa (28 casos) | ≈ 0,02 USD |
  
-> Nota: `informe_costes.py` agrupa por sesión todas las ejecuciones registradas, incluidas las de evaluación (que solo ejecutan el clasificador). Por eso su "coste medio por incidencia" sale más bajo que el de una incidencia completa.
- 
 Precios usados (USD por millón de tokens): gpt-5.4-nano 0,20 entrada / 1,25 salida; gpt-5.4-mini 0,75 entrada / 4,50 salida.
  
 ---
@@ -242,7 +242,7 @@ uv run pytest tests/unit
 Comprueban, **sin llamar a OpenAI**:
 - la estructura del sistema (coordinador, cadena de triaje con sus tres agentes en orden, agente de consultas, modelos, herramientas, `output_key` y transferencias desactivadas en los especialistas);
 - las herramientas (los seis casos de la matriz de prioridad, valores inválidos, la búsqueda y las estadísticas del historial);
-- el control de costes (cálculo, registro y corte por presupuesto);
+- el control de costes (cálculo, registro, corte por presupuesto y separación de incidencias completas en el informe);
 - que la aplicación falla si faltan variables de entorno.
  
 ### Evaluación del clasificador
@@ -309,9 +309,7 @@ En una primera versión, el coordinador enviaba el saludo "¿qué puedes hacer?"
 ## Limitaciones y siguientes pasos
  
 - **Urgencia Baja:** mejorar su detección y medir la mejora con un conjunto de validación nuevo y más grande, para obtener una cifra de acierto más estable.
-- **Informe de costes:** separar en el informe las incidencias completas de las ejecuciones de evaluación.
 - **Historial real:** conectar `buscar_incidencias_similares` a la base de datos de la herramienta de tickets en lugar del CSV. La búsqueda actual compara palabras; podría mejorarse con búsqueda semántica.
 - **Despliegue:** Cloud Run o Agent Engine, con la key en Secret Manager y CI/CD (la plantilla Agent Starter Pack permite añadirlo con `agent-starter-pack enhance`).
 - **Optimización de costes:** evaluar si el redactor puede usar nano manteniendo la calidad, lo que reduciría el coste total aproximadamente a la mitad.
- 
  
