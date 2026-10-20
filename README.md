@@ -2,8 +2,8 @@
  
 Prototipo de sistema multiagente para un servicio de soporte técnico (TI). Un **coordinador** recibe cada mensaje y lo deriva al agente adecuado:
  
-- **Incidencias nuevas** → una cadena de tres agentes que la **clasifica**, calcula su **prioridad**, **busca incidencias similares** ya resueltas y **redacta** una respuesta para el usuario y una nota técnica para el equipo de soporte.
-- **Preguntas sobre el historial** (cuántas incidencias hay, de qué tipo, ejemplos) → un agente de **consultas**.
+- **Incidencias nuevas** → una cadena de cuatro agentes que la **clasifica**, calcula su **prioridad**, **busca incidencias similares** ya resueltas, la **registra como ticket** y **redacta** una respuesta para el usuario (con su número de ticket) y una nota técnica para el equipo de soporte.
+- **Preguntas sobre las incidencias** (el historial de incidencias resueltas o los tickets abiertos: cuántas hay, de qué tipo o prioridad, ejemplos) → un agente de **consultas**.
  
 Desarrollado con **Google Agent Development Kit (ADK)**, modelos de **OpenAI** a través de **LiteLLM**, y generado a partir de la plantilla **Agent Starter Pack** (cookiecutter).
  
@@ -27,7 +27,7 @@ Desarrollado con **Google Agent Development Kit (ADK)**, modelos de **OpenAI** a
 El sistema combina los **dos patrones de coordinación de ADK**:
  
 - **Delegación:** el `coordinador` (un `LlmAgent`) decide, según el mensaje, a qué agente transferirlo.
-- **Cadena:** el `triaje` (un `SequentialAgent`) ejecuta siempre los mismos tres pasos en el mismo orden. Cada agente guarda su resultado en el estado de la sesión (`output_key`) y el siguiente lo recibe en sus instrucciones.
+- **Cadena:** el `triaje` (un `SequentialAgent`) ejecuta siempre los mismos cuatro pasos en el mismo orden. Cada agente guarda su resultado en el estado de la sesión (`output_key`) y el siguiente lo recibe en sus instrucciones.
  
 ```
                          Mensaje del usuario
@@ -37,19 +37,23 @@ El sistema combina los **dos patrones de coordinación de ADK**:
                      │      Coordinador      │  decide a quién transferir
                      │     (gpt-5.4-nano)    │  (saludos: responde él mismo)
                      └───────────────────────┘
-                   incidencia │         │ pregunta sobre el historial
+                   incidencia │         │ pregunta sobre las incidencias
                               ▼         ▼
-   ┌──────────── triaje (SequentialAgent) ───┐   ┌───────────────────┐
-   │                                         │   │     Consultas     │
-   │  1. Clasificador ── calcular_prioridad  │   │  (gpt-5.4-nano)   │
-   │        │            (matriz → P1–P4)    │   │         │         │
-   │        ▼                                │   │ estadisticas_     │
-   │  2. Buscador ── buscar_incidencias_     │   │ historial (CSV)   │
-   │        │        similares (CSV)         │   └───────────────────┘
-   │        ▼                                │
-   │  3. Redactor ──► respuesta al usuario   │
-   │                  + nota técnica         │
-   └─────────────────────────────────────────┘
+┌────────────── triaje (SequentialAgent) ───┐   ┌──────────────────────┐
+│                                           │   │      Consultas       │
+│  1. Clasificador ── calcular_prioridad    │   │    (gpt-5.4-nano)    │
+│        │            (matriz → P1–P4)      │   │                      │
+│        ▼                                  │   │ estadisticas_        │
+│  2. Buscador ── buscar_incidencias_       │   │ historial            │
+│        │        similares (historial CSV) │   │ (historial resuelto) │
+│        ▼                                  │   │                      │
+│  3. Registrador ── registrar_incidencia   │   │ consultar_tickets    │
+│        │           (tickets CSV)          │   │ (tickets abiertos)   │
+│        ▼                                  │   └──────────────────────┘
+│  4. Redactor ──► respuesta al usuario     │
+│                  (con nº de ticket)       │
+│                  + nota técnica           │
+└───────────────────────────────────────────┘
 ```
  
 | Agente | Modelo | Herramienta | Qué hace |
@@ -57,8 +61,9 @@ El sistema combina los **dos patrones de coordinación de ADK**:
 | Coordinador | `MODELO_SENCILLO` (nano) | — (transferencia de ADK) | Transfiere las incidencias a `triaje` y las preguntas sobre el historial a `consultas`. Responde él mismo a saludos y preguntas sobre el sistema. |
 | Clasificador | `MODELO_SENCILLO` (nano) | `calcular_prioridad` | Determina categoría (Red, Software, Hardware, Accesos), impacto (Usuario / Departamento) y urgencia (Alta / Media / Baja). Si la incidencia es demasiado vaga, indica que requiere más información. |
 | Buscador | `MODELO_SENCILLO` (nano) | `buscar_incidencias_similares` | Busca en el historial las incidencias resueltas más parecidas dentro de la misma categoría. |
-| Redactor | `MODELO_REDACCION` (mini) | — | Redacta la respuesta al usuario y la nota técnica. Si falta información, pide al usuario los datos concretos. |
-| Consultas | `MODELO_SENCILLO` (nano) | `estadisticas_historial` | Responde preguntas sobre el historial (totales, reparto por categoría, impacto, urgencia y prioridad, ejemplos) usando solo los datos de la herramienta. |
+| Registrador | `MODELO_SENCILLO` (nano) | `registrar_incidencia` | Registra la incidencia como ticket abierto (`TCK-0001`, `TCK-0002`…). La prioridad la calcula la herramienta, no el modelo. Si la incidencia requiere más información, no registra nada. |
+| Redactor | `MODELO_REDACCION` (mini) | — | Redacta la respuesta al usuario (con su número de ticket) y la nota técnica. Si falta información, pide al usuario los datos concretos. |
+| Consultas | `MODELO_SENCILLO` (nano) | `estadisticas_historial`, `consultar_tickets` | Responde preguntas sobre el historial de incidencias resueltas y sobre los tickets abiertos (totales, reparto por categoría o prioridad, ejemplos), usando solo los datos de las herramientas. |
  
 Los agentes especialistas tienen desactivada la transferencia a otros agentes (`disallow_transfer_to_parent` y `disallow_transfer_to_peers`), de modo que cada uno solo hace su tarea.
  
@@ -76,12 +81,14 @@ Los agentes especialistas tienen desactivada la transferencia a otros agentes (`
 ```
 triaje-incidencias/
 ├── app/
-│   ├── agent.py              # Coordinador, cadena de triaje (3 agentes) y agente de consultas
+│   ├── agent.py              # Coordinador, cadena de triaje (4 agentes) y agente de consultas
 │   ├── tools.py              # Function tools: calcular_prioridad y buscar_incidencias_similares
 │   ├── tools_consultas.py    # Function tool: estadisticas_historial
+│   ├── tickets.py            # Function tools: registrar_incidencia y consultar_tickets
 │   └── finops.py             # Callbacks de medición de coste y límites de gasto
 ├── data/
-│   └── incidencias_resueltas.csv   # Historial de 40 incidencias resueltas
+│   ├── incidencias_resueltas.csv   # Historial de 40 incidencias resueltas
+│   └── tickets_registrados.csv     # Tickets creados por el sistema (generado, excluido de git)
 ├── scripts/
 │   ├── probar_key.py         # Verifica la API key y lista los modelos disponibles (SDK de OpenAI)
 │   ├── informe_costes.py     # Informe FinOps a partir de logs/costes.csv
@@ -132,10 +139,12 @@ Ejemplo:
  
 > Desde esta mañana no puedo conectarme a la VPN, me da error de certificado, y tengo una reunión con un cliente a las 12
  
-Resultado esperado: el coordinador lo transfiere a `triaje`; categoría Red, impacto Usuario, urgencia Alta, prioridad P2, y una solución basada en la incidencia INC-001 del historial.
+Resultado esperado: el coordinador lo transfiere a `triaje`; categoría Red, impacto Usuario, urgencia Alta, prioridad P2; se registra un ticket (por ejemplo, `TCK-0001`) y la respuesta incluye ese número y una solución basada en la incidencia INC-001 del historial.
  
 Otros ejemplos:
 - *¿Cuántas incidencias de Red hay en el historial?* → lo responde el agente de consultas (10).
+- *¿Cuántos tickets hay abiertos?* → lo responde el agente de consultas con los tickets registrados.
+- *No funciona* → se pide más información y no se registra ningún ticket.
 - *Hola, ¿qué puedes hacer?* → responde el coordinador.
  
 ---
@@ -159,10 +168,11 @@ La API key **nunca se escribe en el código ni se sube al repositorio**.
 | Variable | Obligatoria | Descripción |
 |---|---|---|
 | `OPENAI_API_KEY` | Sí | API key de OpenAI |
-| `MODELO_SENCILLO` | Sí | Modelo del coordinador, el clasificador, el buscador y el agente de consultas (p. ej. `openai/gpt-5.4-nano-2026-03-17`) |
+| `MODELO_SENCILLO` | Sí | Modelo del coordinador, el clasificador, el buscador, el registrador y el agente de consultas (p. ej. `openai/gpt-5.4-nano-2026-03-17`) |
 | `MODELO_REDACCION` | Sí | Modelo del redactor (p. ej. `openai/gpt-5.4-mini-2026-03-17`) |
 | `MAX_TOKENS_INCIDENCIA` | No | Límite de tokens por incidencia (por defecto 20000) |
 | `PRESUPUESTO_TOTAL_USD` | No | Presupuesto total del proyecto en USD (por defecto 5) |
+| `RUTA_TICKETS` | No | Fichero donde se guardan los tickets (por defecto `data/tickets_registrados.csv`). Los tests y la evaluación usan uno aparte |
  
 Se usan versiones de modelo **con fecha fija** para que los resultados de la evaluación sean reproducibles.
  
@@ -202,9 +212,9 @@ Para el coste por incidencia solo cuenta las **incidencias completas** (sesiones
  
 ### Optimizaciones aplicadas
  
-- Modelo **nano** para las tareas sencillas (enrutar, clasificar, buscar y consultar); **mini** solo para redactar.
-- La prioridad y la búsqueda se calculan en **Python**, sin gastar tokens.
-- **Temperatura 0** en el coordinador y el clasificador, para decisiones consistentes.
+- Modelo **nano** para las tareas sencillas (enrutar, clasificar, buscar, registrar y consultar); **mini** solo para redactar.
+- La prioridad, la búsqueda, el registro y las estadísticas se calculan en **Python**, sin gastar tokens.
+- **Temperatura 0** en el coordinador, el clasificador y el registrador, para decisiones consistentes.
 - Los callbacks de FinOps se aplican a **todos** los agentes, incluidos los añadidos después: un agente nuevo queda medido y limitado desde el primer momento.
  
 ### Resultados
@@ -216,16 +226,17 @@ Coste de una **incidencia completa** (coordinador + cadena de triaje), por agent
 | Coordinador | 1 | 0,00016 |
 | Clasificador | 2 | 0,0007 |
 | Buscador | 2 | 0,0008 |
+| Registrador | 2 | 0,0002 |
 | Redactor | 1 | 0,0025 |
-| **Total** | | **≈ 0,004** |
+| **Total** | | **≈ 0,005** |
  
 | Métrica | Valor |
 |---|---|
-| Coste por incidencia completa | ≈ 0,004 USD |
-| Proyección a 1.000 incidencias/mes | ≈ 4 USD |
-| Agente más caro | Redactor (~60 % del coste de una incidencia) |
-| Sobrecoste del coordinador | ≈ 4 % por incidencia |
-| Coste de una evaluación completa (28 casos) | ≈ 0,02 USD |
+| Coste por incidencia completa | ≈ 0,005 USD |
+| Proyección a 1.000 incidencias/mes | ≈ 5 USD |
+| Agente más caro | Redactor (~58 % del coste de una incidencia) |
+| Sobrecoste del coordinador | ≈ 3 % por incidencia |
+| Coste de una evaluación completa del clasificador (28 casos) | ≈ 0,02 USD |
  
 Precios usados (USD por millón de tokens): gpt-5.4-nano 0,20 entrada / 1,25 salida; gpt-5.4-mini 0,75 entrada / 4,50 salida.
  
@@ -240,8 +251,8 @@ uv run pytest tests/unit
 ```
  
 Comprueban, **sin llamar a OpenAI**:
-- la estructura del sistema (coordinador, cadena de triaje con sus tres agentes en orden, agente de consultas, modelos, herramientas, `output_key` y transferencias desactivadas en los especialistas);
-- las herramientas (los seis casos de la matriz de prioridad, valores inválidos, la búsqueda y las estadísticas del historial);
+- la estructura del sistema (coordinador, cadena de triaje con sus cuatro agentes en orden, agente de consultas, modelos, herramientas, `output_key` y transferencias desactivadas en los especialistas);
+- las herramientas (los seis casos de la matriz de prioridad, valores inválidos, la búsqueda, las estadísticas del historial y el registro y la consulta de tickets, cada test con su propio fichero temporal);
 - el control de costes (cálculo, registro, corte por presupuesto y separación de incidencias completas en el informe);
 - que la aplicación falla si faltan variables de entorno.
  
@@ -283,11 +294,12 @@ La última columna no corresponde a ningún cambio en las reglas del clasificado
 uv run python scripts/evaluar_coordinador.py
 ```
  
-Envía 9 mensajes (5 incidencias, 3 preguntas sobre el historial y 1 saludo) y comprueba a qué agente los transfiere el coordinador.
+Envía 10 mensajes (5 incidencias, 3 preguntas sobre el historial, 1 sobre los tickets abiertos y 1 saludo) y comprueba a qué agente los transfiere el coordinador. Los tickets que se crean durante la evaluación se guardan en `logs/tickets_evaluacion.csv`, separados de los reales.
  
 | Resultado | Valor |
 |---|---|
-| Enrutado correcto | **9/9 (100 %)** |
+| Enrutado correcto (versión con 9 mensajes) | **9/9 (100 %)** |
+| Enrutado correcto (versión actual, 10 mensajes) | **10/10 (100%)** |
  
 En una primera versión, el coordinador enviaba el saludo "¿qué puedes hacer?" al agente de consultas. Se corrigió ordenando sus reglas y aclarando que las preguntas sobre el propio sistema no son preguntas sobre el historial.
  
@@ -298,8 +310,9 @@ En una primera versión, el coordinador enviaba el saludo "¿qué puedes hacer?"
 - **Varios agentes en lugar de uno:** cada uno tiene una responsabilidad clara, su propio modelo y su propia medición de coste. Si algo falla, se sabe en qué paso.
 - **Cadena para el triaje (`SequentialAgent`):** el proceso de una incidencia sigue siempre los mismos pasos en el mismo orden, así que no hace falta que un modelo decida el orden.
 - **Delegación para la entrada (coordinador):** el tipo de mensaje varía (incidencia, consulta, saludo), así que aquí sí hace falta un agente que decida a quién transferirlo.
-- **Extensibilidad:** el agente de consultas se añadió sin modificar los agentes de triaje: un `LlmAgent` nuevo con su herramienta, colgado del coordinador. Se desarrolló en una rama de git aparte y se unió a la principal tras pasar los tests y la evaluación del enrutado.
-- **Function tools deterministas:** la prioridad y la búsqueda deben dar siempre el mismo resultado, así que se implementan en Python. Son testeables y no consumen tokens; el modelo solo decide cuándo usarlas y con qué datos.
+- **Extensibilidad:** el agente de consultas y el registrador se añadieron sin modificar el clasificador ni el buscador: cada uno es un `LlmAgent` nuevo con su herramienta, colgado del coordinador o insertado en la cadena. Cada ampliación se desarrolló en una rama de git aparte y se unió a la principal tras pasar los tests y la evaluación del enrutado.
+- **Acciones, no solo respuestas:** el registrador guarda cada incidencia como ticket, de modo que el sistema actúa y acumula datos que luego se pueden consultar. La prioridad del ticket la calcula la herramienta (reutilizando `calcular_prioridad`), no el modelo, para que sea siempre coherente.
+- **Function tools deterministas:** la prioridad, la búsqueda y el registro deben dar siempre el mismo resultado, así que se implementan en Python. Son testeables y no consumen tokens; el modelo solo decide cuándo usarlas y con qué datos.
 - **ADK + LiteLLM:** ADK permite usar cualquier proveedor. El modelo se elige por configuración, por lo que cambiar de proveedor no requiere cambiar el código, solo volver a pasar la evaluación.
 - **SDK frente a ADK:** el script `probar_key.py` usa directamente el SDK de OpenAI porque es una llamada única; el sistema de triaje usa ADK porque necesita agentes, herramientas y coordinación.
 - **Desarrollo asistido con Antigravity:** el código se desarrolló con el agente de Antigravity, controlado mediante las reglas de `AGENTS.md` (sin acceso a secretos, tests obligatorios y aprobación previa de los cambios).
@@ -309,6 +322,7 @@ En una primera versión, el coordinador enviaba el saludo "¿qué puedes hacer?"
 ## Limitaciones y siguientes pasos
  
 - **Urgencia Baja:** mejorar su detección y medir la mejora con un conjunto de validación nuevo y más grande, para obtener una cifra de acierto más estable.
+- **Sistema de tickets real:** sustituir los CSV (historial y tickets) por la herramienta de tickets de la empresa, y añadir el cierre de tickets. Al estar aislados en function tools, el cambio no afecta a los agentes.
 - **Historial real:** conectar `buscar_incidencias_similares` a la base de datos de la herramienta de tickets en lugar del CSV. La búsqueda actual compara palabras; podría mejorarse con búsqueda semántica.
 - **Despliegue:** Cloud Run o Agent Engine, con la key en Secret Manager y CI/CD (la plantilla Agent Starter Pack permite añadirlo con `agent-starter-pack enhance`).
 - **Optimización de costes:** evaluar si el redactor puede usar nano manteniendo la calidad, lo que reduciría el coste total aproximadamente a la mitad.
