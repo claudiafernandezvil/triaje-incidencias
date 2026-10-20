@@ -18,12 +18,18 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
  
+import os
+ 
 from dotenv import load_dotenv
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
  
 load_dotenv()
+ 
+# Los tickets creados durante la evaluación se guardan aparte, para no mezclarlos
+# con los tickets reales. Debe fijarse antes de ejecutar los agentes.
+os.environ["RUTA_TICKETS"] = str(ROOT_DIR / "logs" / "tickets_evaluacion.csv")
  
 from app.agent import root_agent  # noqa: E402
  
@@ -38,6 +44,7 @@ CASOS = [
     ("¿Cuántas incidencias de Red hay en el historial?", "consultas"),
     ("¿Qué categoría tiene más incidencias resueltas?", "consultas"),
     ("Dame algunos ejemplos de incidencias de Hardware ya resueltas", "consultas"),
+    ("¿Cuántos tickets con prioridad P1 hay abiertos?", "consultas"),
     ("Hola, ¿qué puedes hacer?", SIN_TRANSFERENCIA),
 ]
  

@@ -22,6 +22,7 @@ from google.genai import types as genai_types
  
 from app.finops import after_model_callback, before_model_callback
 from app.tools import buscar_incidencias_similares, calcular_prioridad
+from app.tickets import consultar_tickets, registrar_incidencia
 from app.tools_consultas import estadisticas_historial
  
 # Carga variables desde el entorno local si no están ya en os.environ
@@ -161,7 +162,43 @@ buscador = LlmAgent(
 )
  
 # -----------------------------------------------------------------------------
-# 3. Agente Redactor
+# 3. Agente Registrador
+# -----------------------------------------------------------------------------
+INSTRUCCION_REGISTRADOR = """Eres el agente encargado de registrar la incidencia como ticket en el sistema de soporte de TI.
+ 
+Dispones de la clasificación previa:
+{clasificacion}
+ 
+Tu tarea es:
+1. Si la clasificación indica 'requiere más información' o no tiene una categoría válida (Red, Software, Hardware o Accesos):
+   - NO registres nada y NO llames a ninguna herramienta.
+   - Responde exactamente: "Ticket no registrado: la incidencia requiere más información."
+2. En cualquier otro caso, llama UNA sola vez a la herramienta `registrar_incidencia` con:
+   - descripcion: el texto original de la incidencia tal como lo escribió el usuario;
+   - categoria, impacto y urgencia: los valores indicados en la clasificación.
+3. Responde en una sola línea con el número de ticket y la prioridad que devuelve la herramienta, con este formato:
+   "Ticket <id> registrado con prioridad <prioridad>."
+   Si la herramienta devuelve un error, indícalo en una línea.
+"""
+ 
+registrador = LlmAgent(
+    name="registrador",
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
+    model=model_sencillo_llm,
+    instruction=INSTRUCCION_REGISTRADOR,
+    tools=[registrar_incidencia],
+    output_key="ticket",
+    before_model_callback=before_model_callback,
+    after_model_callback=after_model_callback,
+    generate_content_config=genai_types.GenerateContentConfig(
+        temperature=0.0,
+        max_output_tokens=300,
+    ),
+)
+ 
+# -----------------------------------------------------------------------------
+# 4. Agente Redactor
 # -----------------------------------------------------------------------------
 INSTRUCCION_REDACTOR = """Eres un asistente de soporte de TI encargado de redactar la respuesta completa de triaje y resolución de incidencias.
  
@@ -171,6 +208,9 @@ Dispones de la siguiente información del caso:
  
 - Incidencias similares y soluciones:
 {similares}
+ 
+- Registro del ticket:
+{ticket}
  
 Tu tarea es redactar la comunicación final estructurada obligatoriamente en dos apartados según el estado del caso:
  
@@ -190,11 +230,12 @@ Caso A: Si la clasificación en {clasificacion} indica 'requiere más informaci�
 Caso B: Si la incidencia fue clasificada con una categoría técnica y prioridad:
 ### 1. Respuesta para el usuario
 - Tono amable, empático, claro y profesional.
+- Indica al usuario el número de ticket con el que ha quedado registrada su incidencia (aparece en el registro del ticket).
 - Explica los pasos a seguir para solventar la incidencia (aprovechando las soluciones de casos similares si aplican) o los siguientes pasos que seguirá el equipo de TI para atender su solicitud.
  
 ### 2. Nota técnica para el equipo de soporte
 - Resumen técnico conciso.
-- Detalla la categoría, el nivel de prioridad asignado (P1-P4), el impacto y la urgencia, junto con los casos similares consultados (IDs y soluciones aplicadas).
+- Detalla el número de ticket, la categoría, el nivel de prioridad asignado (P1-P4), el impacto y la urgencia, junto con los casos similares consultados (IDs y soluciones aplicadas).
 """
  
 redactor = LlmAgent(
@@ -218,33 +259,43 @@ triaje = SequentialAgent(
     name="triaje",
     description=(
         "Procesa una incidencia nueva de soporte de TI: la clasifica, calcula su "
-        "prioridad, busca incidencias similares resueltas y redacta la respuesta."
+        "prioridad, busca incidencias similares resueltas, la registra como ticket "
+        "y redacta la respuesta."
     ),
-    sub_agents=[clasificador, buscador, redactor],
+    sub_agents=[clasificador, buscador, registrador, redactor],
 )
  
 # -----------------------------------------------------------------------------
-# 4. Agente de Consultas sobre el historial
+# 5. Agente de Consultas (historial y tickets registrados)
 # -----------------------------------------------------------------------------
-INSTRUCCION_CONSULTAS = """Eres un asistente que responde preguntas sobre el historial de incidencias de TI ya resueltas.
+INSTRUCCION_CONSULTAS = """Eres un asistente que responde preguntas sobre las incidencias de TI del servicio de soporte.
+ 
+Dispones de dos fuentes de datos, cada una con su herramienta:
+- `estadisticas_historial`: el historial de incidencias YA RESUELTAS (casos pasados con su solución).
+- `consultar_tickets`: los tickets REGISTRADOS por este sistema, que están abiertos (incidencias recientes pendientes).
  
 Tu tarea es:
-1. Llamar a la herramienta `estadisticas_historial` para obtener los datos. Si la pregunta se refiere a una categoría concreta (Red, Software, Hardware o Accesos), pásala en el parámetro `categoria`; si no, déjalo vacío.
-2. Responder de forma breve y clara usando ÚNICAMENTE los datos que devuelve la herramienta. No inventes cifras ni ejemplos.
-3. Si la pregunta no se puede responder con esos datos, dilo claramente e indica qué información sí está disponible (total, reparto por categoría, impacto, urgencia y prioridad, y ejemplos).
+1. Elegir la herramienta según la pregunta:
+   - Si pregunta por incidencias resueltas, el historial o casos pasados, usa `estadisticas_historial`.
+   - Si pregunta por tickets, incidencias abiertas, pendientes, registradas o recientes, usa `consultar_tickets`.
+   - Si no está claro, usa las dos e indica qué dato corresponde a cada fuente.
+2. Si la pregunta se refiere a una categoría (Red, Software, Hardware o Accesos) o a una prioridad (P1, P2, P3 o P4), pásala como filtro en los parámetros de la herramienta.
+3. Responder de forma breve y clara usando ÚNICAMENTE los datos que devuelven las herramientas. No inventes cifras ni ejemplos.
+4. Si la pregunta no se puede responder con esos datos, dilo claramente e indica qué información sí está disponible.
 """
  
 consultas = LlmAgent(
     name="consultas",
     description=(
-        "Responde preguntas sobre el historial de incidencias resueltas: cuántas "
-        "hay, cómo se reparten por categoría, impacto, urgencia o prioridad, y ejemplos."
+        "Responde preguntas sobre el historial de incidencias resueltas y sobre los "
+        "tickets registrados (incidencias abiertas): cuántas hay, cómo se reparten "
+        "por categoría o prioridad, y ejemplos."
     ),
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
     model=model_sencillo_llm,
     instruction=INSTRUCCION_CONSULTAS,
-    tools=[estadisticas_historial],
+    tools=[estadisticas_historial, consultar_tickets],
     before_model_callback=before_model_callback,
     after_model_callback=after_model_callback,
     generate_content_config=genai_types.GenerateContentConfig(
@@ -261,15 +312,15 @@ Decide según estas reglas, en este orden:
  
 1. Si el usuario describe un problema, una avería, un error, una petición o cualquier incidencia nueva (aunque sea muy vaga, como "no funciona"), transfiere a 'triaje'.
  
-2. Si el usuario pide datos o estadísticas sobre incidencias YA RESUELTAS del historial (cuántas hay, de qué categoría, cómo se reparten, ejemplos de casos pasados), transfiere a 'consultas'.
+2. Si el usuario pide datos o estadísticas sobre incidencias YA RESUELTAS del historial, o sobre los TICKETS REGISTRADOS o abiertos (cuántas hay, de qué categoría o prioridad, cómo se reparten, ejemplos), transfiere a 'consultas'.
  
 3. En cualquier otro caso, responde tú mismo en una o dos frases, sin transferir. Esto incluye:
    - saludos y despedidas;
    - preguntas sobre ti o sobre el sistema ("¿qué puedes hacer?", "¿cómo funcionas?", "¿quién eres?");
-   - mensajes que no son ni una incidencia ni una pregunta sobre el historial.
-   Explica que puedes registrar y priorizar incidencias nuevas, y responder preguntas sobre el historial de incidencias resueltas.
+   - mensajes que no son ni una incidencia ni una pregunta sobre las incidencias.
+   Explica que puedes registrar y priorizar incidencias nuevas, y responder preguntas sobre el historial y sobre los tickets abiertos.
  
-Las preguntas sobre lo que puede hacer el sistema NO son preguntas sobre el historial: respóndelas tú.
+Las preguntas sobre lo que puede hacer el sistema NO son preguntas sobre las incidencias: respóndelas tú.
 """
  
 root_agent = LlmAgent(

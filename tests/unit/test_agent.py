@@ -9,6 +9,7 @@ from google.adk.agents import LlmAgent, SequentialAgent
 from google.adk.models.lite_llm import LiteLlm
  
 from app.tools import buscar_incidencias_similares, calcular_prioridad
+from app.tickets import consultar_tickets, registrar_incidencia
 from app.tools_consultas import estadisticas_historial
  
  
@@ -52,7 +53,7 @@ def test_missing_modelo_redaccion_raises_error():
  
  
 def test_estructura_coordinador_triaje_y_consultas():
-    """Verifica la jerarquía: coordinador (raíz) -> triaje (SequentialAgent con 3 subagentes) y consultas."""
+    """Verifica la jerarquía: coordinador (raíz) -> triaje (SequentialAgent con 4 subagentes) y consultas."""
     env_vars = {
         "OPENAI_API_KEY": "dummy_test_key",
         "MODELO_SENCILLO": "gpt-4o-mini",
@@ -85,12 +86,12 @@ def test_estructura_coordinador_triaje_y_consultas():
  
             # Verificar orden y cantidad de subagentes del triaje
             sub_agents = triaje.sub_agents
-            assert len(sub_agents) == 3, (
-                "triaje debe tener exactamente 3 subagentes"
+            assert len(sub_agents) == 4, (
+                "triaje debe tener exactamente 4 subagentes"
             )
             nombres = [ag.name for ag in sub_agents]
-            assert nombres == ["clasificador", "buscador", "redactor"], (
-                f"El orden de los subagentes debe ser ['clasificador', 'buscador', 'redactor'], recibido: {nombres}"
+            assert nombres == ["clasificador", "buscador", "registrador", "redactor"], (
+                f"El orden de los subagentes debe ser ['clasificador', 'buscador', 'registrador', 'redactor'], recibido: {nombres}"
             )
  
             # 1. Subagente clasificador
@@ -130,8 +131,22 @@ def test_estructura_coordinador_triaje_y_consultas():
             assert buscador.after_model_callback == app.agent.after_model_callback
             assert buscador.generate_content_config.max_output_tokens == 500
  
-            # 3. Subagente redactor
-            redactor = sub_agents[2]
+            # 3. Subagente registrador
+            registrador = sub_agents[2]
+            assert isinstance(registrador, LlmAgent)
+            assert isinstance(registrador.model, LiteLlm)
+            assert registrador.model.model == "openai/gpt-4o-mini"
+            assert registrador.output_key == "ticket"
+            assert registrador.tools == [registrar_incidencia]
+            assert "{clasificacion}" in registrador.instruction
+            assert "registrar_incidencia" in registrador.instruction
+            assert "requiere más información" in registrador.instruction
+            assert registrador.before_model_callback == app.agent.before_model_callback
+            assert registrador.after_model_callback == app.agent.after_model_callback
+            assert registrador.generate_content_config.temperature == 0.0
+ 
+            # 4. Subagente redactor
+            redactor = sub_agents[3]
             assert isinstance(redactor, LlmAgent)
             assert isinstance(redactor.model, LiteLlm)
             assert redactor.model.model == "openai/gpt-4o"
@@ -139,6 +154,7 @@ def test_estructura_coordinador_triaje_y_consultas():
             assert redactor.tools == []
             assert "{clasificacion}" in redactor.instruction
             assert "{similares}" in redactor.instruction
+            assert "{ticket}" in redactor.instruction
             assert "requiere más información" in redactor.instruction
             assert "aplicación o equipo" in redactor.instruction.lower()
             assert "desde cuándo" in redactor.instruction.lower()
@@ -152,13 +168,14 @@ def test_estructura_coordinador_triaje_y_consultas():
                 assert especialista.disallow_transfer_to_parent is True
                 assert especialista.disallow_transfer_to_peers is True
  
-            # 4. Agente de consultas
+            # 5. Agente de consultas
             consultas = root.sub_agents[1]
             assert isinstance(consultas, LlmAgent)
             assert isinstance(consultas.model, LiteLlm)
             assert consultas.model.model == "openai/gpt-4o-mini"
-            assert consultas.tools == [estadisticas_historial]
+            assert consultas.tools == [estadisticas_historial, consultar_tickets]
             assert "estadisticas_historial" in consultas.instruction
+            assert "consultar_tickets" in consultas.instruction
             assert consultas.description, "consultas necesita descripción para el enrutado"
             assert consultas.disallow_transfer_to_parent is True
             assert consultas.disallow_transfer_to_peers is True

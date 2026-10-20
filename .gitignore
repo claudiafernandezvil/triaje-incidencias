@@ -203,3 +203,5 @@ tools/a2a-inspector/
 
 .adk/
 logs/
+
+data/tickets_registrados.csv
