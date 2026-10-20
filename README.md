@@ -180,12 +180,6 @@ Se usan versiones de modelo **con fecha fija** para que los resultados de la eva
  
 En un despliegue (por ejemplo, Cloud Run o Agent Engine) no existe fichero `.env`: la key se guardaría en **Google Cloud Secret Manager** y se inyectaría como variable de entorno al arrancar. El código funciona igual sin cambios.
  
-### Si la key se filtra
- 
-1. Revocarla inmediatamente en la consola de OpenAI.
-2. Crear una nueva.
-3. Sustituirla en `.env` (o en Secret Manager).
- 
 ---
  
 ## FinOps: control de costes
@@ -319,11 +313,11 @@ En una primera versión, el coordinador enviaba el saludo "¿qué puedes hacer?"
  
 ---
  
-## Limitaciones y siguientes pasos
+## Limitaciones y mejoras 
  
 - **Urgencia Baja:** mejorar su detección y medir la mejora con un conjunto de validación nuevo y más grande, para obtener una cifra de acierto más estable.
 - **Sistema de tickets real:** sustituir los CSV (historial y tickets) por la herramienta de tickets de la empresa, y añadir el cierre de tickets. Al estar aislados en function tools, el cambio no afecta a los agentes.
 - **Historial real:** conectar `buscar_incidencias_similares` a la base de datos de la herramienta de tickets en lugar del CSV. La búsqueda actual compara palabras; podría mejorarse con búsqueda semántica.
 - **Despliegue:** Cloud Run o Agent Engine, con la key en Secret Manager y CI/CD (la plantilla Agent Starter Pack permite añadirlo con `agent-starter-pack enhance`).
 - **Optimización de costes:** evaluar si el redactor puede usar nano manteniendo la calidad, lo que reduciría el coste total aproximadamente a la mitad.
- 
+- **Incidencias masivas:** los tickets abiertos solo se consultan, el buscador los podría usar para detectar si varias perosnas reportan lo mismo en poco tiempo y si es así, subir el impacto a Departamento.
