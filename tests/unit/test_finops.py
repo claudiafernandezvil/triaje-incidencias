@@ -312,5 +312,10 @@ def test_informe_costes_con_datos(tmp_path, capsys, monkeypatch):
     assert "INFORME DE CONTROL DE COSTES" in salida
     assert "$0.2500 USD" in salida  # Gasto total (0.05 + 0.15 + 0.05)
     assert "redactor" in salida  # Agente más caro
-    assert "Total incidencias procesadas: 2" in salida
-    assert "Proyección para 1.000 incidencias/mes" in salida
+    # Solo inc-1 llega al redactor: es la única incidencia completa
+    assert "Total incidencias procesadas: 1" in salida
+    assert "Coste medio por incidencia:   $0.200000 USD" in salida  # 0.05 + 0.15
+    # inc-2 solo pasa por el clasificador (como una evaluación): se cuenta aparte
+    assert "Otras sesiones (evaluaciones, consultas, saludos): 1" in salida
+    assert "$200.00 USD/mes" in salida  # 0.20 x 1.000
+ 
