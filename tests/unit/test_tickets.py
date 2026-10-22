@@ -1,35 +1,35 @@
-"""Tests de las herramientas de tickets (no llaman a OpenAI)."""
+"""Tests de las herramientas de tickets (no llaman a OpenAI).
  
-import csv
+Cada test usa una base de datos temporal (ver conftest.py).
+"""
  
 import pytest
  
+from app.db import conectar
 from app.tickets import consultar_tickets, registrar_incidencia
  
  
-@pytest.fixture(autouse=True)
-def fichero_tickets_temporal(tmp_path, monkeypatch):
-    """Cada test usa su propio CSV de tickets vacío."""
-    ruta = tmp_path / "tickets.csv"
-    monkeypatch.setenv("RUTA_TICKETS", str(ruta))
-    return ruta
+def _tickets_en_bd() -> list[dict]:
+    with conectar() as conexion:
+        return [dict(f) for f in conexion.execute("SELECT * FROM tickets ORDER BY id").fetchall()]
  
  
-def test_registrar_devuelve_id_y_prioridad_calculada(fichero_tickets_temporal):
+def test_registrar_devuelve_id_y_prioridad_calculada():
     resultado = registrar_incidencia("No hay internet en la sede", "Red", "Departamento", "Alta")
     assert resultado["id"] == "TCK-0001"
     assert resultado["prioridad"] == "P1"
     assert resultado["estado"] == "abierta"
  
  
-def test_registrar_guarda_en_csv(fichero_tickets_temporal):
+def test_registrar_guarda_en_base_de_datos():
     registrar_incidencia("La impresora no imprime", "Hardware", "Usuario", "Media")
-    with open(fichero_tickets_temporal, encoding="utf-8", newline="") as f:
-        filas = list(csv.DictReader(f))
-    assert len(filas) == 1
-    assert filas[0]["descripcion"] == "La impresora no imprime"
-    assert filas[0]["categoria"] == "Hardware"
-    assert filas[0]["prioridad"] == "P3"
+    tickets = _tickets_en_bd()
+    assert len(tickets) == 1
+    assert tickets[0]["descripcion"] == "La impresora no imprime"
+    assert tickets[0]["categoria"] == "Hardware"
+    assert tickets[0]["prioridad"] == "P3"
+    assert tickets[0]["estado"] == "abierta"
+    assert tickets[0]["fecha_cierre"] is None
  
  
 def test_ids_consecutivos():
@@ -53,16 +53,16 @@ def test_normaliza_mayusculas_y_espacios():
         ("Red", "Usuario", "Urgentísima"),
     ],
 )
-def test_valores_invalidos_no_registran(fichero_tickets_temporal, categoria, impacto, urgencia):
+def test_valores_invalidos_no_registran(categoria, impacto, urgencia):
     resultado = registrar_incidencia("Algo falla", categoria, impacto, urgencia)
     assert "error" in resultado
-    assert not fichero_tickets_temporal.exists()
+    assert _tickets_en_bd() == []
  
  
-def test_descripcion_vacia_no_registra(fichero_tickets_temporal):
+def test_descripcion_vacia_no_registra():
     resultado = registrar_incidencia("   ", "Red", "Usuario", "Alta")
     assert "error" in resultado
-    assert not fichero_tickets_temporal.exists()
+    assert _tickets_en_bd() == []
  
  
 def test_consultar_sin_tickets():

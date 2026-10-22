@@ -27,9 +27,9 @@ from google.genai import types
  
 load_dotenv()
  
-# Los tickets creados durante la evaluación se guardan aparte, para no mezclarlos
-# con los tickets reales. Debe fijarse antes de ejecutar los agentes.
-os.environ["RUTA_TICKETS"] = str(ROOT_DIR / "logs" / "tickets_evaluacion.csv")
+# La evaluación usa su propia base de datos, para no mezclar sus tickets con
+# los reales. Debe fijarse antes de ejecutar los agentes.
+os.environ["RUTA_BD"] = str(ROOT_DIR / "logs" / "soporte_evaluacion.db")
  
 from app.agent import root_agent  # noqa: E402
  

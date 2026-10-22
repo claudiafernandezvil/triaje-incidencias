@@ -1,22 +1,24 @@
 """Herramienta de consulta de estadísticas sobre el historial de incidencias resueltas."""
  
-import csv
 from collections import Counter
-from pathlib import Path
  
+from app.db import conectar
 from app.tools import calcular_prioridad
  
-RUTA_HISTORIAL = (
-    Path(__file__).resolve().parent.parent / "data" / "incidencias.csv"
-)
 CATEGORIAS_VALIDAS = ("Red", "Software", "Hardware", "Accesos")
 MAX_EJEMPLOS = 5
  
  
-def _leer_historial(ruta: Path = RUTA_HISTORIAL) -> list[dict]:
-    """Lee el CSV del historial y devuelve una lista de filas."""
-    with open(ruta, encoding="utf-8", newline="") as f:
-        return list(csv.DictReader(f))
+def _leer_historial(categoria: str = "") -> list[dict]:
+    """Lee el historial de la base de datos, opcionalmente filtrado por categoría."""
+    consulta = "SELECT id, descripcion, categoria, impacto, urgencia FROM incidencias_resueltas"
+    parametros: tuple = ()
+    if categoria:
+        consulta += " WHERE categoria = ?"
+        parametros = (categoria,)
+    consulta += " ORDER BY id"
+    with conectar() as conexion:
+        return [dict(fila) for fila in conexion.execute(consulta, parametros).fetchall()]
  
  
 def estadisticas_historial(categoria: str = "") -> dict:
@@ -35,8 +37,6 @@ def estadisticas_historial(categoria: str = "") -> dict:
         impacto, urgencia y prioridad, y hasta 5 ejemplos (id y descripción).
         Si la categoría no es válida, devuelve un diccionario con la clave 'error'.
     """
-    filas = _leer_historial()
- 
     filtro = (categoria or "").strip()
     if filtro:
         filtro = filtro.capitalize()
@@ -47,19 +47,21 @@ def estadisticas_historial(categoria: str = "") -> dict:
                     f"Usa una de: {', '.join(CATEGORIAS_VALIDAS)}."
                 )
             }
-        filas = [f for f in filas if f["categoria"] == filtro]
+ 
+    filas = _leer_historial(filtro)
  
     prioridades: Counter = Counter()
     for fila in filas:
-        resultado = calcular_prioridad(fila["impacto"], fila["urgencia"])
-        prioridades[resultado.get("prioridad", "desconocida")] += 1
+        if fila["impacto"] and fila["urgencia"]:
+            resultado = calcular_prioridad(fila["impacto"], fila["urgencia"])
+            prioridades[resultado.get("prioridad", "desconocida")] += 1
  
     return {
         "filtro_categoria": filtro or "todas",
         "total": len(filas),
         "por_categoria": dict(Counter(f["categoria"] for f in filas)),
-        "por_impacto": dict(Counter(f["impacto"] for f in filas)),
-        "por_urgencia": dict(Counter(f["urgencia"] for f in filas)),
+        "por_impacto": dict(Counter(f["impacto"] for f in filas if f["impacto"])),
+        "por_urgencia": dict(Counter(f["urgencia"] for f in filas if f["urgencia"])),
         "por_prioridad": dict(sorted(prioridades.items())),
         "ejemplos": [
             {"id": f["id"], "descripcion": f["descripcion"]}

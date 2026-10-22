@@ -1,41 +1,20 @@
-"""Function tools para registrar y consultar los tickets de incidencias abiertas.
+"""Function tools para registrar y consultar los tickets de incidencias.
  
-Los tickets se guardan en un CSV cuya ruta se puede cambiar con la variable de
-entorno RUTA_TICKETS (por defecto data/tickets_registrados.csv). La ruta se lee
-en cada llamada, de modo que los tests y las evaluaciones pueden usar un fichero
-aparte sin afectar a los tickets reales.
+Los tickets se guardan en la tabla 'tickets' de la base de datos SQLite
+(ver app/db.py; ruta configurable con la variable de entorno RUTA_BD).
 """
  
-import csv
-import os
 from collections import Counter
 from datetime import datetime
-from pathlib import Path
  
+from app.db import conectar
 from app.tools import calcular_prioridad
  
-RUTA_TICKETS_POR_DEFECTO = (
-    Path(__file__).resolve().parent.parent / "data" / "tickets_registrados.csv"
-)
-CAMPOS = ["id", "fecha", "descripcion", "categoria", "impacto", "urgencia", "prioridad", "estado"]
 CATEGORIAS_VALIDAS = ("Red", "Software", "Hardware", "Accesos")
 IMPACTOS_VALIDOS = ("Usuario", "Departamento")
 URGENCIAS_VALIDAS = ("Alta", "Media", "Baja")
 PRIORIDADES_VALIDAS = ("P1", "P2", "P3", "P4")
 MAX_TICKETS_LISTADOS = 10
- 
- 
-def _ruta_tickets() -> Path:
-    """Devuelve la ruta del CSV de tickets (configurable con RUTA_TICKETS)."""
-    return Path(os.getenv("RUTA_TICKETS", str(RUTA_TICKETS_POR_DEFECTO)))
- 
- 
-def _leer_tickets() -> list[dict]:
-    ruta = _ruta_tickets()
-    if not ruta.exists() or ruta.stat().st_size == 0:
-        return []
-    with open(ruta, encoding="utf-8", newline="") as f:
-        return list(csv.DictReader(f))
  
  
 def _normalizar(valor: str) -> str:
@@ -80,33 +59,18 @@ def registrar_incidencia(
     if prioridad not in PRIORIDADES_VALIDAS:
         return {"error": f"No se pudo calcular la prioridad: {resultado_prioridad}"}
  
-    existentes = _leer_tickets()
-    ticket = {
-        "id": f"TCK-{len(existentes) + 1:04d}",
-        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "descripcion": descripcion,
-        "categoria": categoria,
-        "impacto": impacto,
-        "urgencia": urgencia,
-        "prioridad": prioridad,
-        "estado": "abierta",
-    }
+    fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with conectar() as conexion:
+        numero = conexion.execute("SELECT COUNT(*) FROM tickets").fetchone()[0] + 1
+        id_ticket = f"TCK-{numero:04d}"
+        conexion.execute(
+            "INSERT INTO tickets "
+            "(id, fecha, descripcion, categoria, impacto, urgencia, prioridad, estado) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, 'abierta')",
+            (id_ticket, fecha, descripcion, categoria, impacto, urgencia, prioridad),
+        )
  
-    ruta = _ruta_tickets()
-    ruta.parent.mkdir(parents=True, exist_ok=True)
-    escribir_cabecera = not ruta.exists() or ruta.stat().st_size == 0
-    with open(ruta, "a", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=CAMPOS)
-        if escribir_cabecera:
-            writer.writeheader()
-        writer.writerow(ticket)
- 
-    return {
-        "id": ticket["id"],
-        "prioridad": prioridad,
-        "estado": ticket["estado"],
-        "fecha": ticket["fecha"],
-    }
+    return {"id": id_ticket, "prioridad": prioridad, "estado": "abierta", "fecha": fecha}
  
  
 def consultar_tickets(categoria: str = "", prioridad: str = "") -> dict:
@@ -125,36 +89,36 @@ def consultar_tickets(categoria: str = "", prioridad: str = "") -> dict:
         por prioridad y por categoría, y los 10 más recientes (id, fecha,
         categoría, prioridad, estado y descripción).
     """
-    tickets = _leer_tickets()
+    condiciones: list[str] = []
+    parametros: list[str] = []
  
     filtro_cat = _normalizar(categoria)
     if filtro_cat:
         if filtro_cat not in CATEGORIAS_VALIDAS:
             return {"error": f"Categoría '{categoria}' no válida. Usa una de: {', '.join(CATEGORIAS_VALIDAS)}."}
-        tickets = [t for t in tickets if t["categoria"] == filtro_cat]
+        condiciones.append("categoria = ?")
+        parametros.append(filtro_cat)
  
     filtro_pri = (prioridad or "").strip().upper()
     if filtro_pri:
         if filtro_pri not in PRIORIDADES_VALIDAS:
             return {"error": f"Prioridad '{prioridad}' no válida. Usa una de: {', '.join(PRIORIDADES_VALIDAS)}."}
-        tickets = [t for t in tickets if t["prioridad"] == filtro_pri]
+        condiciones.append("prioridad = ?")
+        parametros.append(filtro_pri)
  
-    recientes = list(reversed(tickets))[:MAX_TICKETS_LISTADOS]
+    consulta = "SELECT id, fecha, descripcion, categoria, prioridad, estado FROM tickets"
+    if condiciones:
+        consulta += " WHERE " + " AND ".join(condiciones)
+    consulta += " ORDER BY id DESC"
+ 
+    with conectar() as conexion:
+        tickets = [dict(fila) for fila in conexion.execute(consulta, parametros).fetchall()]
+ 
     return {
         "filtro_categoria": filtro_cat or "todas",
         "filtro_prioridad": filtro_pri or "todas",
         "total": len(tickets),
         "por_prioridad": dict(sorted(Counter(t["prioridad"] for t in tickets).items())),
         "por_categoria": dict(Counter(t["categoria"] for t in tickets)),
-        "tickets_recientes": [
-            {
-                "id": t["id"],
-                "fecha": t["fecha"],
-                "categoria": t["categoria"],
-                "prioridad": t["prioridad"],
-                "estado": t["estado"],
-                "descripcion": t["descripcion"],
-            }
-            for t in recientes
-        ],
+        "tickets_recientes": tickets[:MAX_TICKETS_LISTADOS],
     }

@@ -205,3 +205,4 @@ tools/a2a-inspector/
 logs/
 
 data/tickets_registrados.csv
+data/soporte.db
