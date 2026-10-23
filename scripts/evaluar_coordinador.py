@@ -45,6 +45,7 @@ CASOS = [
     ("¿Qué categoría tiene más incidencias resueltas?", "consultas"),
     ("Dame algunos ejemplos de incidencias de Hardware ya resueltas", "consultas"),
     ("¿Cuántos tickets con prioridad P1 hay abiertos?", "consultas"),
+    ("Cierra el ticket TCK-0001, se resolvió reinstalando el certificado de la VPN", "gestion_tickets"),
     ("Hola, ¿qué puedes hacer?", SIN_TRANSFERENCIA),
 ]
  

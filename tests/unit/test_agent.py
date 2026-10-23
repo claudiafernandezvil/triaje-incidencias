@@ -9,7 +9,7 @@ from google.adk.agents import LlmAgent, SequentialAgent
 from google.adk.models.lite_llm import LiteLlm
  
 from app.tools import buscar_incidencias_similares, calcular_prioridad
-from app.tickets import consultar_tickets, registrar_incidencia
+from app.tickets import cerrar_ticket, consultar_tickets, registrar_incidencia, ver_ticket
 from app.tools_consultas import estadisticas_historial
  
  
@@ -53,7 +53,7 @@ def test_missing_modelo_redaccion_raises_error():
  
  
 def test_estructura_coordinador_triaje_y_consultas():
-    """Verifica la jerarquía: coordinador (raíz) -> triaje (SequentialAgent con 4 subagentes) y consultas."""
+    """Verifica la jerarquía: coordinador (raíz) -> triaje (SequentialAgent con 4 subagentes), consultas y gestion_tickets."""
     env_vars = {
         "OPENAI_API_KEY": "dummy_test_key",
         "MODELO_SENCILLO": "gpt-4o-mini",
@@ -72,9 +72,10 @@ def test_estructura_coordinador_triaje_y_consultas():
             assert root.name == "coordinador"
             assert isinstance(root.model, LiteLlm)
             assert root.model.model == "openai/gpt-4o-mini"
-            assert [ag.name for ag in root.sub_agents] == ["triaje", "consultas"]
+            assert [ag.name for ag in root.sub_agents] == ["triaje", "consultas", "gestion_tickets"]
             assert "triaje" in root.instruction
             assert "consultas" in root.instruction
+            assert "gestion_tickets" in root.instruction
             assert root.before_model_callback == app.agent.before_model_callback
             assert root.after_model_callback == app.agent.after_model_callback
             assert root.generate_content_config.temperature == 0.0
@@ -182,6 +183,21 @@ def test_estructura_coordinador_triaje_y_consultas():
             assert consultas.before_model_callback == app.agent.before_model_callback
             assert consultas.after_model_callback == app.agent.after_model_callback
             assert consultas.generate_content_config.max_output_tokens == 500
+ 
+            # 6. Agente de gestión de tickets
+            gestion = root.sub_agents[2]
+            assert isinstance(gestion, LlmAgent)
+            assert isinstance(gestion.model, LiteLlm)
+            assert gestion.model.model == "openai/gpt-4o-mini"
+            assert gestion.tools == [ver_ticket, cerrar_ticket]
+            assert "ver_ticket" in gestion.instruction
+            assert "cerrar_ticket" in gestion.instruction
+            assert gestion.description, "gestion_tickets necesita descripción para el enrutado"
+            assert gestion.disallow_transfer_to_parent is True
+            assert gestion.disallow_transfer_to_peers is True
+            assert gestion.before_model_callback == app.agent.before_model_callback
+            assert gestion.after_model_callback == app.agent.after_model_callback
+            assert gestion.generate_content_config.temperature == 0.0
  
             # Verificar objeto App
             assert app.agent.app is not None

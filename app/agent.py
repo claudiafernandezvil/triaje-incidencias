@@ -22,7 +22,7 @@ from google.genai import types as genai_types
  
 from app.finops import after_model_callback, before_model_callback
 from app.tools import buscar_incidencias_similares, calcular_prioridad
-from app.tickets import consultar_tickets, registrar_incidencia
+from app.tickets import cerrar_ticket, consultar_tickets, registrar_incidencia, ver_ticket
 from app.tools_consultas import estadisticas_historial
  
 # Carga variables desde el entorno local si no están ya en os.environ
@@ -272,12 +272,14 @@ INSTRUCCION_CONSULTAS = """Eres un asistente que responde preguntas sobre las in
  
 Dispones de dos fuentes de datos, cada una con su herramienta:
 - `estadisticas_historial`: el historial de incidencias YA RESUELTAS (casos pasados con su solución).
-- `consultar_tickets`: los tickets REGISTRADOS por este sistema, que están abiertos (incidencias recientes pendientes).
+- `consultar_tickets`: los tickets REGISTRADOS por este sistema. Por defecto devuelve los abiertos; usa el parámetro `estado` con 'cerrada' o 'todas' si preguntan por tickets cerrados o por todos.
+ 
+El historial incluye también los tickets que se han cerrado (aparecen con origen 'ticket').
  
 Tu tarea es:
 1. Elegir la herramienta según la pregunta:
    - Si pregunta por incidencias resueltas, el historial o casos pasados, usa `estadisticas_historial`.
-   - Si pregunta por tickets, incidencias abiertas, pendientes, registradas o recientes, usa `consultar_tickets`.
+   - Si pregunta por tickets, incidencias abiertas, pendientes, cerradas, registradas o recientes, usa `consultar_tickets`.
    - Si no está claro, usa las dos e indica qué dato corresponde a cada fuente.
 2. Si la pregunta se refiere a una categoría (Red, Software, Hardware o Accesos) o a una prioridad (P1, P2, P3 o P4), pásala como filtro en los parámetros de la herramienta.
 3. Responder de forma breve y clara usando ÚNICAMENTE los datos que devuelven las herramientas. No inventes cifras ni ejemplos.
@@ -304,21 +306,71 @@ consultas = LlmAgent(
 )
  
 # -----------------------------------------------------------------------------
+# 6. Agente de Gestión de Tickets (cierre)
+# -----------------------------------------------------------------------------
+INSTRUCCION_GESTION_TICKETS = """Eres el agente que cierra los tickets de incidencias cuando un técnico indica que están resueltos.
+ 
+Las soluciones de los tickets cerrados se añaden al historial y el sistema las propondrá en futuras incidencias parecidas. Por eso SOLO debes cerrar un ticket si la solución es válida.
+ 
+Sigue estos pasos:
+ 
+1. Identifica en el mensaje el identificador del ticket (formato TCK-0001) y la solución aplicada.
+   Si falta alguno de los dos, NO llames a ninguna herramienta: pide en una frase el dato que falta.
+ 
+2. Llama a `ver_ticket` con el identificador para conocer la incidencia original.
+   Si devuelve un error (el ticket no existe) o el ticket ya está cerrado, explícalo y no continúes.
+ 
+3. Comprueba la solución. Es VÁLIDA solo si cumple las dos condiciones:
+   a) Describe una acción técnica concreta que se realizó (por ejemplo: reinstalar, sustituir, configurar, restablecer, conceder permisos, actualizar, limpiar, reiniciar un servicio o un equipo).
+   b) Tiene relación con la incidencia original: actúa sobre el equipo, la aplicación, la red o el acceso afectados, y podría razonablemente resolver ese problema.
+   NO es válida si:
+   - no tiene relación con la informática o es una broma;
+   - es una acción técnica sobre algo distinto de lo que fallaba;
+   - es vaga y no dice qué se hizo ("ya funciona", "se arregló", "solucionado").
+ 
+4. Si la solución NO es válida, NO llames a `cerrar_ticket`. Explica en una o dos frases por qué no puedes cerrar el ticket y pide al técnico que indique qué acción concreta resolvió la incidencia.
+ 
+5. Si la solución es válida, llama UNA sola vez a `cerrar_ticket` con el identificador y la solución, redactada de forma clara y breve. Después confirma el cierre e indica que la solución se ha añadido al historial y se usará en futuras incidencias parecidas. Si la herramienta devuelve un error, explícalo.
+"""
+ 
+gestion_tickets = LlmAgent(
+    name="gestion_tickets",
+    description=(
+        "Cierra tickets de incidencias resueltas: recibe el identificador del ticket "
+        "y la solución aplicada, comprueba que la solución es válida, lo marca como "
+        "cerrado y lo añade al historial."
+    ),
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
+    model=model_sencillo_llm,
+    instruction=INSTRUCCION_GESTION_TICKETS,
+    tools=[ver_ticket, cerrar_ticket],
+    before_model_callback=before_model_callback,
+    after_model_callback=after_model_callback,
+    generate_content_config=genai_types.GenerateContentConfig(
+        temperature=0.0,
+        max_output_tokens=300,
+    ),
+)
+ 
+# -----------------------------------------------------------------------------
 # Coordinador (Root Agent)
 # -----------------------------------------------------------------------------
 INSTRUCCION_COORDINADOR = """Eres el punto de entrada del servicio de soporte de TI. No resuelves nada tú mismo: decides qué agente atiende cada mensaje.
  
 Decide según estas reglas, en este orden:
  
-1. Si el usuario describe un problema, una avería, un error, una petición o cualquier incidencia nueva (aunque sea muy vaga, como "no funciona"), transfiere a 'triaje'.
+1. Si el usuario pide CERRAR o dar por resuelto un ticket ya registrado (normalmente menciona un identificador como TCK-0001 y cómo se solucionó), transfiere a 'gestion_tickets'.
  
-2. Si el usuario pide datos o estadísticas sobre incidencias YA RESUELTAS del historial, o sobre los TICKETS REGISTRADOS o abiertos (cuántas hay, de qué categoría o prioridad, cómo se reparten, ejemplos), transfiere a 'consultas'.
+2. Si el usuario describe un problema, una avería, un error, una petición o cualquier incidencia nueva (aunque sea muy vaga, como "no funciona"), transfiere a 'triaje'.
  
-3. En cualquier otro caso, responde tú mismo en una o dos frases, sin transferir. Esto incluye:
+3. Si el usuario pide datos o estadísticas sobre incidencias YA RESUELTAS del historial, o sobre los TICKETS registrados, abiertos o cerrados (cuántos hay, de qué categoría o prioridad, cómo se reparten, ejemplos), transfiere a 'consultas'.
+ 
+4. En cualquier otro caso, responde tú mismo en una o dos frases, sin transferir. Esto incluye:
    - saludos y despedidas;
    - preguntas sobre ti o sobre el sistema ("¿qué puedes hacer?", "¿cómo funcionas?", "¿quién eres?");
-   - mensajes que no son ni una incidencia ni una pregunta sobre las incidencias.
-   Explica que puedes registrar y priorizar incidencias nuevas, y responder preguntas sobre el historial y sobre los tickets abiertos.
+   - mensajes que no son ni una incidencia, ni una pregunta sobre las incidencias, ni un cierre de ticket.
+   Explica que puedes registrar y priorizar incidencias nuevas, responder preguntas sobre el historial y los tickets, y cerrar tickets resueltos.
  
 Las preguntas sobre lo que puede hacer el sistema NO son preguntas sobre las incidencias: respóndelas tú.
 """
@@ -327,7 +379,7 @@ root_agent = LlmAgent(
     name="coordinador",
     model=model_sencillo_llm,
     instruction=INSTRUCCION_COORDINADOR,
-    sub_agents=[triaje, consultas],
+    sub_agents=[triaje, consultas, gestion_tickets],
     before_model_callback=before_model_callback,
     after_model_callback=after_model_callback,
     generate_content_config=genai_types.GenerateContentConfig(
@@ -339,4 +391,4 @@ root_agent = LlmAgent(
 app = App(
     root_agent=root_agent,
     name="app",
-)
+) 

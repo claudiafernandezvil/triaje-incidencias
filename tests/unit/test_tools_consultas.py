@@ -44,3 +44,8 @@ def test_ejemplos_limitados_y_con_campos():
     assert 0 < len(resultado["ejemplos"]) <= 5
     for ejemplo in resultado["ejemplos"]:
         assert set(ejemplo) == {"id", "descripcion"}
+ 
+ 
+def test_reparto_por_origen():
+    resultado = estadisticas_historial()
+    assert resultado["por_origen"] == {"historial": 40}
