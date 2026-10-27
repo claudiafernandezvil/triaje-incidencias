@@ -1,5 +1,5 @@
 {
-  "descripcion": "Casos de evaluación del clasificador. 'ajuste' = usados para ajustar las instrucciones; 'nuevo' = no vistos en el primer ajuste (sus fallos se usaron en el segundo); 'validacion' = nunca usados para ajustar, ejecutar solo al final.",
+  "descripcion": "Casos de evaluación del clasificador. 'ajuste' = usados para ajustar las instrucciones; 'nuevo' = no vistos en el primer ajuste (sus fallos se usaron en el segundo); 'validacion' = nunca usados para ajustar, ejecutar solo al final. 'validacion_2' = segundo conjunto de validación, creado al final y nunca usado para ajustar.",
   "casos": [
     {
       "id": "EV-01",
@@ -301,6 +301,330 @@
         "impacto": "Departamento",
         "urgencia": "Alta",
         "prioridad": "P1"
+      }
+    },
+    {
+      "id": "EV-29",
+      "incidencia": "Ninguno de los ordenadores de la oficina de Santiago tiene conexión a internet desde hace una hora y no podemos atender a los clientes",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Red",
+        "impacto": "Departamento",
+        "urgencia": "Alta",
+        "prioridad": "P1"
+      }
+    },
+    {
+      "id": "EV-30",
+      "incidencia": "La VPN me desconecta cada media hora; vuelvo a conectar y puedo seguir trabajando",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Red",
+        "impacto": "Usuario",
+        "urgencia": "Baja",
+        "prioridad": "P4"
+      }
+    },
+    {
+      "id": "EV-31",
+      "incidencia": "Mi portátil no se conecta al Wi-Fi de la oficina y sin conexión no puedo hacer nada",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Red",
+        "impacto": "Usuario",
+        "urgencia": "Alta",
+        "prioridad": "P2"
+      }
+    },
+    {
+      "id": "EV-32",
+      "incidencia": "Las videollamadas de toda la planta de ventas se cortan a ratos",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Red",
+        "impacto": "Departamento",
+        "urgencia": "Media",
+        "prioridad": "P2"
+      }
+    },
+    {
+      "id": "EV-33",
+      "incidencia": "La conexión de mi puesto va más lenta que la semana pasada, aunque puedo trabajar con normalidad",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Red",
+        "impacto": "Usuario",
+        "urgencia": "Baja",
+        "prioridad": "P4"
+      }
+    },
+    {
+      "id": "EV-34",
+      "incidencia": "No cargan las páginas internas desde mi portátil, solo funcionan las externas",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Red",
+        "impacto": "Usuario",
+        "urgencia": "Media",
+        "prioridad": "P3"
+      }
+    },
+    {
+      "id": "EV-35",
+      "incidencia": "El enlace con la delegación de Lugo está caído y sus seis empleados no pueden trabajar",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Red",
+        "impacto": "Departamento",
+        "urgencia": "Alta",
+        "prioridad": "P1"
+      }
+    },
+    {
+      "id": "EV-36",
+      "incidencia": "Excel se cierra cada vez que abro la hoja de presupuestos",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Software",
+        "impacto": "Usuario",
+        "urgencia": "Media",
+        "prioridad": "P3"
+      }
+    },
+    {
+      "id": "EV-37",
+      "incidencia": "La aplicación de contabilidad da un error al guardar y todo el departamento financiero está parado justo hoy que se cierra el trimestre",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Software",
+        "impacto": "Departamento",
+        "urgencia": "Alta",
+        "prioridad": "P1"
+      }
+    },
+    {
+      "id": "EV-38",
+      "incidencia": "Me gustaría que me instalarais un programa para editar imágenes cuando tengáis un rato",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Software",
+        "impacto": "Usuario",
+        "urgencia": "Baja",
+        "prioridad": "P4"
+      }
+    },
+    {
+      "id": "EV-39",
+      "incidencia": "Outlook no envía correos desde esta mañana y tengo que mandar una oferta a un cliente antes de las 13:00",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Software",
+        "impacto": "Usuario",
+        "urgencia": "Alta",
+        "prioridad": "P2"
+      }
+    },
+    {
+      "id": "EV-40",
+      "incidencia": "El CRM va muy lento para todo el equipo comercial, aunque se puede seguir usando",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Software",
+        "impacto": "Departamento",
+        "urgencia": "Baja",
+        "prioridad": "P3"
+      }
+    },
+    {
+      "id": "EV-41",
+      "incidencia": "Teams no me muestra las notificaciones y me estoy perdiendo mensajes importantes",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Software",
+        "impacto": "Usuario",
+        "urgencia": "Media",
+        "prioridad": "P3"
+      }
+    },
+    {
+      "id": "EV-42",
+      "incidencia": "Word me avisa de que hay una actualización pendiente, ¿la instalo?",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Software",
+        "impacto": "Usuario",
+        "urgencia": "Baja",
+        "prioridad": "P4"
+      }
+    },
+    {
+      "id": "EV-43",
+      "incidencia": "La pantalla de mi portátil se ha roto y no veo nada",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Hardware",
+        "impacto": "Usuario",
+        "urgencia": "Alta",
+        "prioridad": "P2"
+      }
+    },
+    {
+      "id": "EV-44",
+      "incidencia": "El ratón hace doble clic solo de vez en cuando, pero puedo trabajar",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Hardware",
+        "impacto": "Usuario",
+        "urgencia": "Baja",
+        "prioridad": "P4"
+      }
+    },
+    {
+      "id": "EV-45",
+      "incidencia": "La impresora compartida de la planta 3 no imprime y nadie de la planta puede sacar los albaranes de hoy",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Hardware",
+        "impacto": "Departamento",
+        "urgencia": "Alta",
+        "prioridad": "P1"
+      }
+    },
+    {
+      "id": "EV-46",
+      "incidencia": "La tecla Enter de mi teclado está floja, aunque de momento funciona",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Hardware",
+        "impacto": "Usuario",
+        "urgencia": "Baja",
+        "prioridad": "P4"
+      }
+    },
+    {
+      "id": "EV-47",
+      "incidencia": "Mi portátil se reinicia solo varias veces al día",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Hardware",
+        "impacto": "Usuario",
+        "urgencia": "Media",
+        "prioridad": "P3"
+      }
+    },
+    {
+      "id": "EV-48",
+      "incidencia": "El escáner de administración no funciona y nadie del departamento puede digitalizar facturas",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Hardware",
+        "impacto": "Departamento",
+        "urgencia": "Media",
+        "prioridad": "P2"
+      }
+    },
+    {
+      "id": "EV-49",
+      "incidencia": "Mi monitor externo parpadea a ratos",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Hardware",
+        "impacto": "Usuario",
+        "urgencia": "Media",
+        "prioridad": "P3"
+      }
+    },
+    {
+      "id": "EV-50",
+      "incidencia": "He olvidado mi contraseña y no puedo iniciar sesión en el ordenador",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Accesos",
+        "impacto": "Usuario",
+        "urgencia": "Alta",
+        "prioridad": "P2"
+      }
+    },
+    {
+      "id": "EV-51",
+      "incidencia": "Necesito permiso de lectura en la carpeta de proyectos para la semana que viene",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Accesos",
+        "impacto": "Usuario",
+        "urgencia": "Media",
+        "prioridad": "P3"
+      }
+    },
+    {
+      "id": "EV-52",
+      "incidencia": "Mi contraseña caduca la semana que viene, ¿cómo puedo cambiarla?",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Accesos",
+        "impacto": "Usuario",
+        "urgencia": "Baja",
+        "prioridad": "P4"
+      }
+    },
+    {
+      "id": "EV-53",
+      "incidencia": "Todos los empleados de recursos humanos han perdido el acceso a la aplicación de nóminas y hoy hay que pagar las nóminas",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Accesos",
+        "impacto": "Departamento",
+        "urgencia": "Alta",
+        "prioridad": "P1"
+      }
+    },
+    {
+      "id": "EV-54",
+      "incidencia": "Me aparece acceso denegado al abrir la intranet de compras y necesito hacer un pedido hoy",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Accesos",
+        "impacto": "Usuario",
+        "urgencia": "Alta",
+        "prioridad": "P2"
+      }
+    },
+    {
+      "id": "EV-55",
+      "incidencia": "El código del doble factor no me llega al móvil, pero sigo con la sesión abierta y puedo trabajar",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Accesos",
+        "impacto": "Usuario",
+        "urgencia": "Baja",
+        "prioridad": "P4"
+      }
+    },
+    {
+      "id": "EV-56",
+      "incidencia": "Tres compañeros nuevos del departamento de logística empiezan mañana y todavía no tienen cuenta",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "categoria": "Accesos",
+        "impacto": "Departamento",
+        "urgencia": "Media",
+        "prioridad": "P2"
+      }
+    },
+    {
+      "id": "EV-57",
+      "incidencia": "Tengo un problema",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "requiere_mas_informacion": true
+      }
+    },
+    {
+      "id": "EV-58",
+      "incidencia": "Esto va fatal",
+      "conjunto": "validacion_2",
+      "esperado": {
+        "requiere_mas_informacion": true
       }
     }
   ]

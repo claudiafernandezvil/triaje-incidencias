@@ -207,7 +207,6 @@ La API key **nunca se escribe en el código ni se sube al repositorio**.
  
 Se usan versiones de modelo **con fecha fija** para que los resultados de la evaluación sean reproducibles.
  
- 
 ### En producción
  
 En un despliegue (por ejemplo, Cloud Run o Agent Engine) no existe fichero `.env`: la key se guardaría en **Google Cloud Secret Manager** y se inyectaría como variable de entorno al arrancar. El código funciona igual sin cambios.
@@ -242,6 +241,8 @@ Para el coste por incidencia solo cuenta las **incidencias completas** (sesiones
 | Presupuesto por incidencia | `before_model_callback` + `MAX_TOKENS_INCIDENCIA` | Si una sesión supera el límite, no se llama al modelo |
 | Presupuesto total | `before_model_callback` + `PRESUPUESTO_TOTAL_USD` | Si se alcanza el presupuesto, no se llama al modelo |
  
+ 
+ 
 ### Optimizaciones aplicadas
  
 - Modelo **nano** para las tareas sencillas (enrutar, clasificar, buscar, registrar, consultar y gestionar cierres); **mini** solo para redactar.
@@ -268,7 +269,7 @@ Coste de una **incidencia completa** (coordinador + cadena de triaje), por agent
 | Proyección a 1.000 incidencias/mes | ≈ 4,4 USD |
 | Agente más caro | Redactor (~58 % del coste de una incidencia) |
 | Sobrecoste del coordinador | ≈ 3 % por incidencia |
-| Coste de una evaluación completa del clasificador (28 casos) | ≈ 0,02 USD |
+| Coste de una evaluación completa del clasificador (58 casos) | ≈ 0,04 USD |
  
 Precios usados (USD por millón de tokens): gpt-5.4-nano 0,20 entrada / 1,25 salida; gpt-5.4-mini 0,75 entrada / 4,50 salida.
  
@@ -296,29 +297,36 @@ Comprueban, **sin llamar a OpenAI**:
 uv run python scripts/evaluar.py
 ```
  
-Ejecuta el clasificador sobre los 28 casos de `tests/eval/casos_evaluacion.json` y compara categoría, impacto, urgencia y prioridad con el resultado esperado. Los casos se dividen en tres conjuntos:
+Ejecuta el clasificador sobre los 58 casos de `tests/eval/casos_evaluacion.json` y compara categoría, impacto, urgencia y prioridad con el resultado esperado. Los casos se dividen en tres conjuntos:
  
 | Conjunto | Casos | Uso |
 |---|---|---|
 | `ajuste` | 13 | Usados para ajustar las instrucciones |
 | `nuevo` | 5 | No vistos en el primer ajuste; sus fallos se usaron en el segundo |
 | `validacion` | 10 | **Nunca** usados para ajustar; se ejecutan solo al final |
+| `validacion_2` | 30 | Segundo conjunto de validación, creado al final para obtener una cifra más estable. **Nunca** usado para ajustar |
  
 ### Resultados
  
-| Métrica | Evaluación inicial (18 casos) | Tras el ajuste (28 casos) | Tras añadir el coordinador (28 casos) |
-|---|---|---|---|
-| Categoría | 94 % | 92 % | 96 % |
-| Impacto | 71 % | 96 % | 96 % |
-| Urgencia | 65 % | 85 % | 88 % |
-| Prioridad | 59 % | 85 % | 88 % |
-| Casos totalmente correctos | 61 % | 79 % | 86 % |
-| **Validación** | — | **70 %** | **90 %** |
+| Métrica | Evaluación inicial (18 casos) | Tras el ajuste (28 casos) | Tras añadir el coordinador (28 casos) | Validación ampliada (58 casos) |
+|---|---|---|---|---|
+| Categoría | 94 % | 92 % | 96 % | **98 %** |
+| Impacto | 71 % | 96 % | 96 % | **98 %** |
+| Urgencia | 65 % | 85 % | 88 % | 83 % |
+| Prioridad | 59 % | 85 % | 88 % | 83 % |
+| Casos totalmente correctos | 61 % | 79 % | 86 % | 83 % |
+| `validacion` (10 casos) | — | 70 % | 90 % | 90 % |
+| `validacion_2` (30 casos) | — | — | — | **80 %** |
  
-La última columna no corresponde a ningún cambio en las reglas del clasificador: al integrarlo bajo el coordinador cambia ligeramente el contexto que recibe el modelo. Con solo 10 casos de validación, cada caso vale 10 puntos, por lo que el acierto en validación debe leerse como un rango (**70–90 %**) y no como una cifra exacta.
+**Resultado en validación (40 casos nunca usados para ajustar): 82,5 % de casos totalmente correctos, con un 98 % de acierto en categoría e impacto.**
+ 
+Con solo 10 casos de validación, cada caso valía 10 puntos y el acierto variaba entre el 70 % y el 90 % según la ejecución. Por eso se añadió un segundo conjunto de 30 casos: con 40 casos en total, la cifra es mucho más estable.
  
 **Análisis de los fallos restantes:**
+- **Todos los fallos del segundo conjunto de validación son de urgencia**; la categoría y el impacto fueron correctos en los 30 casos.
 - El modelo tiende a sobrestimar la urgencia: le cuesta asignar **Baja** aunque el texto indique que el usuario puede seguir trabajando.
+- La regla de urgencia **Alta** incluía "nadie o casi nadie puede hacer su tarea", lo que **mezcla la urgencia con el número de personas afectadas** (que corresponde al impacto). Así, una sola persona totalmente bloqueada (pantalla rota, contraseña olvidada) se clasificaba como Media, y un caso con la palabra "nadie" se clasificaba como Alta.
+- Algunos resultados esperados de urgencia son discutibles: la urgencia es el campo más subjetivo, y en un par de casos se podría defender otra respuesta.
 - Algunas reglas basadas en palabras concretas ("entrar", "equipo") tienen **efectos secundarios** en casos que no se habían previsto.
 - Un ajuste produjo una **regresión** (el caso de la contraseña dejó de clasificarse como Accesos), detectada gracias a la evaluación.
  
@@ -334,7 +342,7 @@ Envía 11 mensajes (5 incidencias, 3 preguntas sobre el historial, 1 sobre los t
 |---|---|
 | Enrutado correcto (versión con 9 mensajes) | **9/9 (100 %)** |
 | Enrutado correcto (versión con 10 mensajes) | **10/10 (100 %)** |
-| Enrutado correcto (versión actual, 11 mensajes) | **11/11 (100%)** |
+| Enrutado correcto (versión actual, 11 mensajes) | **11/11 (100 %)** |
  
 En una primera versión, el coordinador enviaba el saludo "¿qué puedes hacer?" al agente de consultas. Se corrigió ordenando sus reglas y aclarando que las preguntas sobre el propio sistema no son preguntas sobre el historial.
  
@@ -416,7 +424,7 @@ Como cada fuente de datos está aislada en una function tool, estos cambios no a
  
 ## Limitaciones y mejoras
  
-- **Urgencia Baja:** mejorar su detección y medir la mejora con un conjunto de validación nuevo y más grande, para obtener una cifra de acierto más estable.
+- **Reglas de urgencia:** separar en la regla de Alta la urgencia del número de personas afectadas, mejorar la detección de la urgencia Baja y medir la mejora con un conjunto de validación nuevo (los actuales ya se han visto).
 - **Permisos para cerrar tickets:** ahora cualquiera que use el chat puede cerrar un ticket. En un sistema real solo podrían hacerlo los técnicos identificados, y quedaría registrado quién cerró cada uno.
 - **Revisión humana del historial:** la validación del agente frena las soluciones absurdas, pero no es infalible. Las soluciones de tickets cerrados podrían entrar como pendientes de validar y usarse solo tras la aprobación de un supervisor.
 - **Sistema de tickets real:** sustituir la base de datos SQLite por la herramienta de tickets de la empresa. Al estar aislada en function tools, el cambio no afecta a los agentes.
